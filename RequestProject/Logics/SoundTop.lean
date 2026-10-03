@@ -26,10 +26,15 @@ lemma map_bang_embed (Δ : Multiset (ILL.Formula α)) :
     (Δ.map ILL.Formula.bang).map embed = (Δ.map embed).map ILLe.Formula.bang := by
   simp only [Multiset.map_map]; rfl
 
-/-- **ILL ⊆ ILLᵉ(_ι)**: every sequent provable in **LLJ** is provable in **ILC** / **ILC_ι**
+/-- **ILL ⊆ ILLᵉ(_ι)** — **Paper Section 3.1, Corollary 3.7** (`ILC(ι) as a conservative extension of LLJ`, PDF p. 16):
+every sequent provable in **LLJ** is provable in **ILC** / **ILC_ι**
 (for any value of the flag `ι`). -/
-theorem LLJ.toILC (ι : Bool) {Δ : Multiset (ILL.Formula α)} {C : Option (ILL.Formula α)}
-    (h : LLJ Δ C) : ILC ι (Δ.map embed) (optMs (C.map embed)) := by
+theorem LLJ.toILC
+    (ι : Bool)
+    {Δ : Multiset (ILL.Formula α)}
+    {C : Option (ILL.Formula α)}
+    (h : LLJ Δ C) :
+    ILC ι (Δ.map embed) (optMs (C.map embed)) := by
   induction h with
   | id A => exact (ILC.id (embed A)).cast' (by simp) (by simp)
   | cut _ _ ih₁ ih₂ =>
@@ -82,11 +87,16 @@ open ILLe
 @[simp] lemma girardE_imp (A B : IL.Formula α) :
     girardE (.imp A B) = ILLe.Formula.limp (.bang (girardE A)) (girardE B) := rfl
 
-/-- **Girard's translation of LJ** (unlinearisation, top row): if `Δ ⊢ C` is provable in
-**LJ**, then `!Δ° ⊢ C°` is provable in **ILC** (and in **ILC_ι**), where `(_)°` is Girard's
-translation `IL.girardE` (`A ∨ B ↦ !A° ⊕ !B°`, `A ⇒ B ↦ !A° ⊸ B°`, `ff ↦ !⊥`). -/
-theorem LJ.toILC (ι : Bool) {Δ : Multiset (IL.Formula α)} {C : Option (IL.Formula α)}
-    (h : LJ Δ C) : ILC ι ((Δ.map girardE).map .bang) (optMs (C.map girardE)) := by
+/-- **Girard's translation of LJ** (unlinearisation, top row) —
+**Paper Section 1.3** (PDF p. 3–5), **Section 2.2** (PDF p. 12), **Section 3.2** (PDF p. 17):
+if `Δ ⊢ C` is provable in **LJ**, then `!Δ° ⊢ C°` is provable in **ILC** (and in **ILC_ι**),
+where `(_)°` is Girard's translation `IL.girardE` (`A ∨ B ↦ !A° ⊕ !B°`, `A ⇒ B ↦ !A° ⊸ B°`, `ff ↦ !⊥`). -/
+theorem LJ.toILC
+  (ι : Bool)
+  {Δ : Multiset (IL.Formula α)}
+  {C : Option (IL.Formula α)}
+  (h : LJ Δ C) :
+  ILC ι ((Δ.map girardE).map .bang) (optMs (C.map girardE)) := by
   induction h with
   | weakL A _ ih => msimpa using ILC.bangW (girardE A) ih
   | contrL _ ih => msimpa using ILC.bangC (by msimpa using ih)

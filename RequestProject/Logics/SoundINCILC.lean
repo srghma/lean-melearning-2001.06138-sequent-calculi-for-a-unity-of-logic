@@ -5,6 +5,7 @@ public import RequestProject.Logics.ILCLemmas
 /-!
 # Unlinearisation `ILLᵉ_ι ⟶ ILᵉ`: the translation `𝒯_!` of INC into ILC_ι
 
+**Paper Section 3.2, Lemma 3.16** (`Translation 𝒯_! of INC into ILC_ι`, PDF p. 23):
 Every provable sequent `Δ ⊢ Γ` of **INC** is translated to the provable sequent
 `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` of **ILC_ι**, i.e. to a provable sequent of the unlinearisation
 `(ILC_ι)_!`.
@@ -24,8 +25,9 @@ lemma map_wn_T (Γ : Multiset (ILe.Formula α)) :
     (Γ.map ILe.Formula.wn).map T = (Γ.map T).map ILLe.Formula.wn := by
   simp only [Multiset.map_map]; rfl
 
-/-- **Translation `𝒯_!` of INC into ILC_ι** (unlinearisation `ILLᵉ_ι ⟶ ILᵉ`): if `Δ ⊢ Γ`
-is provable in **INC**, then `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` is provable in **ILC_ι**. -/
+/-- **Translation `𝒯_!` of INC into ILC_ι** (unlinearisation `ILLᵉ_ι ⟶ ILᵉ`) —
+**Paper Section 3.2, Lemma 3.16** (`Translation 𝒯_! of INC into ILC_ι`, PDF p. 23):
+if `Δ ⊢ Γ` is provable in **INC**, then `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` is provable in **ILC_ι**. -/
 theorem INC.toILC {Δ Γ : Multiset (ILe.Formula α)} (h : INC Δ Γ) :
     Unlinearisation ILLe.Formula.bang (ILC true) (Δ.map T) (Γ.map T) := by
   unfold Unlinearisation

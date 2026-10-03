@@ -5,6 +5,7 @@ public import RequestProject.Logics.ILCLemmas
 /-!
 # Classicalisation `ILLᵉ_ι ⟶ CLL⁻`: the translation `𝒯_?` of CLC into ILC_ι
 
+**Paper Section 3.3, Lemma 3.23** (`Translation 𝒯_? of CLC into ILC_ι`, PDF p. 27):
 Every provable sequent `Δ ⊢ Γ` of **CLC** is translated to the provable sequent
 `𝒯_?(Δ) ⊢ ?𝒯_?(Γ)` of **ILC_ι**, i.e. to a provable sequent of the classicalisation
 `(ILC_ι)_?`.
@@ -24,8 +25,9 @@ lemma map_bang_T (Δ : Multiset (CLLneg.Formula α)) :
     (Δ.map CLLneg.Formula.bang).map T = (Δ.map T).map ILLe.Formula.bang := by
   simp only [Multiset.map_map]; rfl
 
-/-- **Translation `𝒯_?` of CLC into ILC_ι** (classicalisation `ILLᵉ_ι ⟶ CLL⁻`): if `Δ ⊢ Γ`
-is provable in **CLC**, then `𝒯_?(Δ) ⊢ ?𝒯_?(Γ)` is provable in **ILC_ι**. -/
+/-- **Translation `𝒯_?` of CLC into ILC_ι** (classicalisation `ILLᵉ_ι ⟶ CLL⁻`) —
+**Paper Section 3.3, Lemma 3.23** (`Translation 𝒯_? of CLC into ILC_ι`, PDF p. 27):
+if `Δ ⊢ Γ` is provable in **CLC**, then `𝒯_?(Δ) ⊢ ?𝒯_?(Γ)` is provable in **ILC_ι**. -/
 theorem CLC.toILC {Δ Γ : Multiset (CLLneg.Formula α)} (h : CLC Δ Γ) :
     Classicalisation ILLe.Formula.wn (ILC true) (Δ.map T) (Γ.map T) := by
   unfold Classicalisation

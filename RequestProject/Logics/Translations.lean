@@ -5,7 +5,7 @@ public import RequestProject.Logics.Calculi
 /-!
 # Maps between the six logics (at the level of formulas and sequents)
 
-Each arrow of the diagram
+Each arrow of the diagram (Paper **Section 1.3**, Theorem p. 3; **Section 3.5**, Figure 6, p. 30):
 
 ```
 ILL      ──Girard's translation──▶  IL
@@ -18,15 +18,16 @@ CLL⁻     ──unlinearisation (_)_!──▶  CL
 is realised by a translation of formulas going in the *opposite* direction (from the
 "target" logic back into the "source" one), together with the corresponding map on sequents:
 
-* `ILL.embed : ILL → ILLᵉ` and `IL.embed : IL → ILᵉ` (the conservative extensions);
-* `IL.girard : IL → ILL` (Girard's translation; partial, see below), with
+* `ILL.embed : ILL → ILLᵉ` (**Section 3.1**, Corollary 3.7, PDF p. 16);
+* `IL.embed : IL → ILᵉ` (**Section 3.2**, Corollary 3.14, PDF p. 20);
+* `IL.girard : IL → ILL` (Girard's translation, **Section 2.2**, PDF p. 12; **Section 3.2**, PDF p. 17; partial, see below), with
   sequent map `Δ ⊢ C ↦ !Δ° ⊢ C°`;
-* `ILe.T : ILᵉ → ILLᵉ` (the translation `𝒯_!`, unlinearisation), sequent map
+* `ILe.T : ILᵉ → ILLᵉ` (translation `𝒯_!`, unlinearisation, **Section 3.2**, Lemma 3.16, PDF p. 23), sequent map
   `Δ ⊢ Γ ↦ !𝒯(Δ) ⊢ 𝒯(Γ)`;
-* `CL.Tbang : CL → CLL⁻` (the translation `𝒯_!`, unlinearisation), same sequent map;
-* `CLLneg.T : CLL⁻ → ILLᵉ` (the translation `𝒯_?`, classicalisation), sequent map
+* `CL.Tbang : CL → CLL⁻` (translation `𝒯_!`, unlinearisation, **Section 3.3**, Lemma 3.22, PDF p. 26), same sequent map;
+* `CLLneg.T : CLL⁻ → ILLᵉ` (translation `𝒯_?`, classicalisation, **Section 3.3**, Lemma 3.23, PDF p. 27), sequent map
   `Δ ⊢ Γ ↦ 𝒯(Δ) ⊢ ?𝒯(Γ)`;
-* `CL.Twn : CL → ILᵉ` (the translation `𝒯_?`, classicalisation), same sequent map.
+* `CL.Twn : CL → ILᵉ` (translation `𝒯_?`, classicalisation, **Section 3.2**, Lemma 3.15, PDF p. 22), same sequent map.
 
 Girard's translation needs a translation of falsity `ff`; since ILL (as defined in the paper)
 has neither `0` nor `⊥`, we define it as a partial map `IL.girard : IL → Option ILL`, which is
@@ -43,7 +44,8 @@ variable {α : Type u}
 
 /-! ## The two conservative extensions (vertical top arrows) -/
 
-/-- Embedding of ILL formulas into ILLᵉ formulas (`A ⊸ B ↦ ¬A ⅋ B`). -/
+/-- Embedding of ILL formulas into ILLᵉ formulas (`A ⊸ B ↦ ¬A ⅋ B`) —
+**Paper Section 3.1**, Corollary 3.7 (`ILC(ι) as a conservative extension of LLJ`, PDF p. 16). -/
 def ILL.embed : ILL.Formula α → ILLe.Formula α
   | .var x => .var x
   | .top => .top
@@ -53,7 +55,8 @@ def ILL.embed : ILL.Formula α → ILLe.Formula α
   | .limp A B => ILLe.Formula.limp (embed A) (embed B)
   | .bang A => .bang (embed A)
 
-/-- Embedding of IL formulas into ILᵉ formulas. -/
+/-- Embedding of IL formulas into ILᵉ formulas —
+**Paper Section 3.2**, Corollary 3.14 (`INC as a conservative extension of LJ`, PDF p. 20). -/
 def IL.embed : IL.Formula α → ILe.Formula α
   | .var x => .var x
   | .top => .top
@@ -66,7 +69,8 @@ def IL.embed : IL.Formula α → ILe.Formula α
 
 /-- The translation `𝒯_!` of ILᵉ formulas into ILLᵉ formulas (unlinearisation
 `ILLᵉ_ι ⟶ ILᵉ`): `⊤ ↦ ⊤`, `ff ↦ !⊥`, `A & B ↦ 𝒯A & 𝒯B`, `A ∨ B ↦ !𝒯A ⊕ !𝒯B`,
-`A ⇒ B ↦ !𝒯A ⊸ 𝒯B`, `?A ↦ ?𝒯A`. -/
+`A ⇒ B ↦ !𝒯A ⊸ 𝒯B`, `?A ↦ ?𝒯A` —
+**Paper Section 3.2, Lemma 3.16** (`Translation 𝒯_! of INC into ILC_ι`, PDF p. 23). -/
 def ILe.T : ILe.Formula α → ILLe.Formula α
   | .var x => .var x
   | .top => .top
@@ -78,7 +82,8 @@ def ILe.T : ILe.Formula α → ILLe.Formula α
 
 /-- The translation `𝒯_!` of CL formulas into CLL⁻ formulas (unlinearisation
 `CLL⁻ ⟶ CL`): `tt ↦ tt`, `ff ↦ !⊥`, `A ∧ B ↦ 𝒯A ∧ 𝒯B`, `A ∨ B ↦ !𝒯A ⊕ !𝒯B`,
-`A ⇛ B ↦ !𝒯A ↬ 𝒯B`. -/
+`A ⇛ B ↦ !𝒯A ↬ 𝒯B` —
+**Paper Section 3.3, Lemma 3.22** (`Translation 𝒯_! of LK into CLC`, PDF p. 26). -/
 def CL.Tbang : CL.Formula α → CLLneg.Formula α
   | .var x => .var x
   | .tt => .tt
@@ -88,8 +93,8 @@ def CL.Tbang : CL.Formula α → CLLneg.Formula α
   | .imp A B => .imp (.bang (Tbang A)) (Tbang B)
 
 /-- Girard's translation of IL formulas into ILL formulas (`A ∨ B ↦ !A ⊕ !B`,
-`A ⇒ B ↦ !A ⊸ B`). It is undefined (`none`) exactly on formulas containing `ff`, since ILL
-has no falsity constant. -/
+`A ⇒ B ↦ !A ⊸ B`) — **Paper Section 2.2**, PDF p. 12; **Section 3.2**, PDF p. 17.
+It is undefined (`none`) exactly on formulas containing `ff`, since ILL has no falsity constant. -/
 def IL.girard : IL.Formula α → Option (ILL.Formula α)
   | .var x => some (.var x)
   | .top => some .top
@@ -99,14 +104,15 @@ def IL.girard : IL.Formula α → Option (ILL.Formula α)
   | .imp A B => do return .limp (.bang (← girard A)) (← girard B)
 
 /-- The total version of Girard's translation, landing in ILLᵉ (with `ff ↦ !⊥`):
-`𝒯_! ∘ embed`. -/
+`𝒯_! ∘ embed` — **Paper Section 1.3 / Section 3.2** (PDF p. 3, 17). -/
 def IL.girardE (A : IL.Formula α) : ILLe.Formula α := ILe.T (IL.embed A)
 
 /-! ## Classicalisation `(_)_?` (vertical bottom arrows) -/
 
 /-- The translation `𝒯_?` of CLL⁻ formulas into ILLᵉ formulas (classicalisation
 `ILLᵉ_ι ⟶ CLL⁻`): `tt ↦ ?⊤`, `⊥ ↦ ⊥`, `A ∧ B ↦ ?𝒯A & ?𝒯B`, `A ⊕ B ↦ 𝒯A ⊕ 𝒯B`,
-`A ↬ B ↦ 𝒯A ⊸ ?𝒯B`, `!A ↦ !𝒯A`. -/
+`A ↬ B ↦ 𝒯A ⊸ ?𝒯B`, `!A ↦ !𝒯A` —
+**Paper Section 3.3, Lemma 3.23** (`Translation 𝒯_? of CLC into ILC_ι`, PDF p. 27). -/
 def CLLneg.T : CLLneg.Formula α → ILLe.Formula α
   | .var x => .var x
   | .tt => .wn .top
@@ -118,7 +124,8 @@ def CLLneg.T : CLLneg.Formula α → ILLe.Formula α
 
 /-- The translation `𝒯_?` of CL formulas into ILᵉ formulas (classicalisation
 `ILᵉ ⟶ CL`): `tt ↦ ?⊤`, `ff ↦ ff`, `A ∧ B ↦ ?𝒯A & ?𝒯B`, `A ∨ B ↦ 𝒯A ∨ 𝒯B`,
-`A ⇛ B ↦ 𝒯A ⇒ ?𝒯B`. -/
+`A ⇛ B ↦ 𝒯A ⇒ ?𝒯B` —
+**Paper Section 3.2, Lemma 3.15** (`Translation 𝒯_? of LK into INC`, PDF p. 22). -/
 def CL.Twn : CL.Formula α → ILe.Formula α
   | .var x => .var x
   | .tt => .wn .top
@@ -129,16 +136,19 @@ def CL.Twn : CL.Formula α → ILe.Formula α
 
 /-! ## The composite translations of CL into ILLᵉ_ι -/
 
-/-- `𝒯_{!?} := 𝒯_! ∘ 𝒯_?` : CL → ILᵉ → ILLᵉ (route through ILᵉ). -/
+/-- `𝒯_{!?} := 𝒯_! ∘ 𝒯_?` : CL → ILᵉ → ILLᵉ (route through ILᵉ) —
+**Paper Section 3.2, Corollary 3.18** (PDF p. 25); **Section 3.4, Theorem 3.26** (PDF p. 29). -/
 def CL.Tbangwn (A : CL.Formula α) : ILLe.Formula α := ILe.T (CL.Twn A)
 
-/-- `𝒯_{?!} := 𝒯_? ∘ 𝒯_!` : CL → CLL⁻ → ILLᵉ (route through CLL⁻). -/
+/-- `𝒯_{?!} := 𝒯_? ∘ 𝒯_!` : CL → CLL⁻ → ILLᵉ (route through CLL⁻) —
+**Paper Section 3.3, Corollary 3.25** (PDF p. 29); **Section 3.4, Theorem 3.26** (PDF p. 29). -/
 def CL.Twnbang (A : CL.Formula α) : ILLe.Formula α := CLLneg.T (CL.Tbang A)
 
 /-! ## Commutativity of the diagram at the level of formulas -/
 
-/-- **Commutativity of the lower square** (formulas): the two routes CL → ILᵉ → ILLᵉ and
-CL → CLL⁻ → ILLᵉ yield the same translation `𝒯_{!?} = 𝒯_{?!}`. -/
+/-- **Commutativity of the lower square** (formulas) —
+**Paper Section 3.4, Theorem 3.26** (`Commutative unity of logic`, PDF p. 29):
+the two routes CL → ILᵉ → ILLᵉ and CL → CLL⁻ → ILLᵉ yield the same translation `𝒯_{!?} = 𝒯_{?!}`. -/
 theorem CL.Tbangwn_eq_Twnbang (A : CL.Formula α) : CL.Tbangwn A = CL.Twnbang A := by
   induction A with
   | var x => rfl

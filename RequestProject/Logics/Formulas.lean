@@ -5,7 +5,7 @@ public import Mathlib
 /-!
 # The six formal languages
 
-Formal languages (grammars of formulas) of the six logics in the commutative diagram
+Formal languages (grammars of formulas) of the six logics in the commutative diagram:
 
 ```
 ILL      ──Girard's translation──▶  IL
@@ -15,17 +15,28 @@ ILLᵉ_ι   ──unlinearisation (_)_!──▶  ILᵉ
 CLL⁻     ──unlinearisation (_)_!──▶  CL
 ```
 
+### Book / Paper Correspondence (PDF `arXiv:2001.06138v3`):
+* Diagram & Main Results: **Section 1.3** (PDF pages 3–5).
+* `CL.Formula`: **Section 2.1, Definition 2.2** (PDF page 8).
+* `IL.Formula`: **Section 2.1, Definition 2.5** (PDF page 8).
+* `ILL.Formula`: **Section 2.2, Definition 2.10** (PDF page 10).
+* `ILLe.Formula` / `CLL.Formula`: **Section 3.1, Definition 3.2** (PDF page 13) /
+  classical linear logic (CLL). The two languages are **identical**: every CLL formula
+  is an `ILLe.Formula` and vice versa. `CLL.Formula` is just a namespace alias.
+* `ILe.Formula`: **Section 3.2, Definition 3.11** (PDF page 20).
+* `CLLneg.Formula`: **Section 3.3, Definition 3.19** (PDF page 25).
+
 Throughout, `α` is the type of propositional variables.
 
 Notational conventions follow the paper: in the linear logics, `⊤` is the unit of
-tensor `⊗` and `1` is the unit of with `&` (i.e. the traditional notations are swapped).
+tensor `⊗` and `1` is the unit of with `&` (i.e. the traditional notations are swapped, Notation 2.9, PDF page 10).
 -/
 
 @[expose] public section
 
 universe u
 
-/-- Formulas of classical logic (CL):
+/-- Formulas of classical logic (CL) — **Paper Section 2.1, Definition 2.2** (PDF page 8):
 `A, B ::= X | tt | ff | A ∧ B | A ∨ B | A ⇛ B`. -/
 inductive CL.Formula (α : Type u) : Type u
   | var : α → CL.Formula α
@@ -41,10 +52,10 @@ inductive CL.Formula (α : Type u) : Type u
   | imp : CL.Formula α → CL.Formula α → CL.Formula α
   deriving DecidableEq
 
-/-- Classical negation `∼ A := A ⇛ ff`. -/
+/-- Classical negation `∼ A := A ⇛ ff` — **Paper Section 2.1, Definition 2.2** (PDF page 8). -/
 def CL.Formula.neg {α : Type u} (A : CL.Formula α) : CL.Formula α := .imp A .ff
 
-/-- Formulas of intuitionistic logic (IL):
+/-- Formulas of intuitionistic logic (IL) — **Paper Section 2.1, Definition 2.5** (PDF page 8):
 `A, B ::= X | ⊤ | ff | A & B | A ∨ B | A ⇒ B`. -/
 inductive IL.Formula (α : Type u) : Type u
   | var : α → IL.Formula α
@@ -60,10 +71,10 @@ inductive IL.Formula (α : Type u) : Type u
   | imp : IL.Formula α → IL.Formula α → IL.Formula α
   deriving DecidableEq
 
-/-- Intuitionistic negation `A⋆ := A ⇒ ff`. -/
+/-- Intuitionistic negation `A⋆ := A ⇒ ff` — **Paper Section 2.1, Definition 2.5** (PDF page 8). -/
 def IL.Formula.neg {α : Type u} (A : IL.Formula α) : IL.Formula α := .imp A .ff
 
-/-- Formulas of intuitionistic linear logic (ILL):
+/-- Formulas of intuitionistic linear logic (ILL) — **Paper Section 2.2, Definition 2.10** (PDF page 10):
 `A, B ::= X | ⊤ | A ⊗ B | A & B | A ⊕ B | A ⊸ B | !A`
 (here `⊤` is the unit of `⊗`, and `⊸` is the *up-linear implication*). -/
 inductive ILL.Formula (α : Type u) : Type u
@@ -82,8 +93,9 @@ inductive ILL.Formula (α : Type u) : Type u
   | bang : ILL.Formula α → ILL.Formula α
   deriving DecidableEq
 
-/-- Formulas of intuitionistic linear logic (ι-)extended (ILLᵉ, ILLᵉ_ι); both logics share
-this formal language:
+/-- Formulas of intuitionistic linear logic (ι-)extended (ILLᵉ, ILLᵉ_ι) —
+**Paper Section 3.1, Definition 3.2** (PDF page 13):
+both logics share this formal language:
 `A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | ¬A | !A | ?A`
 where `¬` is the *up-linear negation*. -/
 inductive ILLe.Formula (α : Type u) : Type u
@@ -112,11 +124,33 @@ inductive ILLe.Formula (α : Type u) : Type u
   | wn : ILLe.Formula α → ILLe.Formula α
   deriving DecidableEq
 
-/-- Up-linear implication in ILLᵉ: `A ⊸ B := ¬A ⅋ B`. -/
+/-- Up-linear implication in ILLᵉ: `A ⊸ B := ¬A ⅋ B` —
+**Paper Section 3.1, Definition 3.2** (PDF page 13). -/
 def ILLe.Formula.limp {α : Type u} (A B : ILLe.Formula α) : ILLe.Formula α :=
   .par (.neg A) B
 
-/-- Formulas of intuitionistic logic extended (ILᵉ):
+/-!
+## CLL.Formula — Formulas of Classical Linear Logic (CLL)
+
+The formula language of CLL is **identical** to `ILLe.Formula`:
+```
+A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | ¬A | !A | ?A
+```
+Linear negation `¬` plays the role of `(—)⊥`, so `X⊥ = ¬(var X)`.
+The formula type `CLL.Formula α` is therefore defined as an abbreviation for `ILLe.Formula α`.
+-/
+
+/-- Formulas of classical linear logic (CLL).
+The language coincides with `ILLe.Formula`:
+`A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | ¬A | !A | ?A`
+where `¬A` is linear negation `A⊥`. -/
+abbrev CLL.Formula (α : Type u) := ILLe.Formula α
+
+/-- Linear negation in CLL: `A⊥ := ¬A` (the `neg` constructor of `ILLe.Formula`). -/
+abbrev CLL.Formula.lneg {α : Type u} (A : CLL.Formula α) : CLL.Formula α := .neg A
+
+/-- Formulas of intuitionistic logic extended (ILᵉ) —
+**Paper Section 3.2, Definition 3.11** (PDF page 20):
 `A, B ::= X | ⊤ | ff | A & B | A ∨ B | A ⇒ B | ?A`. -/
 inductive ILe.Formula (α : Type u) : Type u
   | var : α → ILe.Formula α
@@ -134,10 +168,12 @@ inductive ILe.Formula (α : Type u) : Type u
   | wn : ILe.Formula α → ILe.Formula α
   deriving DecidableEq
 
-/-- Intuitionistic negation in ILᵉ: `A⋆ := A ⇒ ff`. -/
+/-- Intuitionistic negation in ILᵉ: `A⋆ := A ⇒ ff` —
+**Paper Section 3.2, Definition 3.11** (PDF page 20). -/
 def ILe.Formula.neg {α : Type u} (A : ILe.Formula α) : ILe.Formula α := .imp A .ff
 
-/-- Formulas of classical linear logic negative (CLL⁻):
+/-- Formulas of classical linear logic negative (CLL⁻) —
+**Paper Section 3.3, Definition 3.19** (PDF page 25):
 `A, B ::= X | tt | ⊥ | A ∧ B | A ⊕ B | A ↬ B | !A`. -/
 inductive CLLneg.Formula (α : Type u) : Type u
   | var : α → CLLneg.Formula α
@@ -155,7 +191,8 @@ inductive CLLneg.Formula (α : Type u) : Type u
   | bang : CLLneg.Formula α → CLLneg.Formula α
   deriving DecidableEq
 
-/-- Classical linear negation in CLL⁻: `A⋆ := A ↬ ⊥`. -/
+/-- Classical linear negation in CLL⁻: `A⋆ := A ↬ ⊥` —
+**Paper Section 3.3, Definition 3.19** (PDF page 25). -/
 def CLLneg.Formula.neg {α : Type u} (A : CLLneg.Formula α) : CLLneg.Formula α := .imp A .bot
 
 /-- Turn an optional formula (the right-hand side of an intuitionistic sequent) into a

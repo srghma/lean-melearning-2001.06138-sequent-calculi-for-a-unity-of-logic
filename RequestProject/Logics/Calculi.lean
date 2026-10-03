@@ -7,13 +7,15 @@ public import RequestProject.Logics.Formulas
 
 Sequent calculi embodying the six logics:
 
-* `CL.LK`        — the sequent calculus **LK** for CL;
-* `IL.LJ`        — the sequent calculus **LJ** for IL;
-* `ILL.LLJ`      — the sequent calculus **LLJ** for ILL;
-* `ILLe.ILC ι`   — the sequent calculus **ILC** for ILLᵉ (`ι = false`) and **ILC_ι** for
-                   ILLᵉ_ι (`ι = true`, which adds the two *weakly distributive rules*);
-* `ILe.INC`      — the sequent calculus **INC** for ILᵉ;
-* `CLLneg.CLC`   — the sequent calculus **CLC** for CLL⁻.
+* `CL.LK`        — the sequent calculus **LK** for CL (**Section 2.1, Definition 2.4, Figure 1**, PDF pages 8–9);
+* `IL.LJ`        — the sequent calculus **LJ** for IL (**Section 2.1, Definition 2.7**, PDF page 8);
+* `ILL.LLJ`      — the sequent calculus **LLJ** for ILL (**Section 2.2, Definition 2.13**, PDF page 12);
+* `ILLe.ILC ι`   — the sequent calculus **ILC** for ILLᵉ (`ι = false`, **Section 3.1, Definition 3.3, Figure 3**, PDF pages 13–14)
+                   and **ILC_ι** for ILLᵉ_ι (`ι = true`, **Section 3.1, Definition 3.4**, PDF page 13, adding weakly distributive rules);
+* `CLL.LLK`      — the classical symmetric sequent calculus **LLK** for CLL; `CLL.Formula` is an
+                   abbreviation for `ILLe.Formula` (identical languages);
+* `ILe.INC`      — the sequent calculus **INC** for ILᵉ (**Section 3.2, Definition 3.12, Figure 4**, PDF pages 20–21);
+* `CLLneg.CLC`   — the sequent calculus **CLC** for CLL⁻ (**Section 3.3, Definition 3.20, Figure 5**, PDF pages 25–26).
 
 We formalise *provability*: each calculus is an inductive predicate `Δ ⊢ Γ` on sequents.
 
@@ -29,8 +31,9 @@ We formalise *provability*: each calculus is an inductive predicate `Δ ⊢ Γ` 
   *without* right weakening; this is the reading under which **INC** is a conservative
   extension of **LJ** (**INC** has no unrestricted right weakening).
 
-Finally we define the two generic operations on sequent calculi, *unlinearisation* `(_)_!`
-and *classicalisation* `(_)_?`.
+Finally we define the two generic operations on sequent calculi:
+* *unlinearisation* `(_)_!` (**Section 1.3, Definition 1.1**, PDF page 4)
+* *classicalisation* `(_)_?` (**Section 1.3, Definition 1.1**, PDF page 4).
 -/
 
 @[expose] public section
@@ -45,7 +48,8 @@ namespace CL
 
 open Formula
 
-/-- The sequent calculus **LK** for classical logic: `LK Δ Γ` means `Δ ⊢ Γ` is provable. -/
+/-- The sequent calculus **LK** for classical logic — **Paper Section 2.1, Definition 2.4, Figure 1** (PDF pages 8–9):
+`LK Δ Γ` means `Δ ⊢ Γ` is provable in LK. -/
 inductive LK : Multiset (Formula α) → Multiset (Formula α) → Prop
   | weakL {Δ Γ : Multiset (Formula α)} (A) : LK Δ Γ → LK (A ::ₘ Δ) Γ
   | weakR {Δ Γ : Multiset (Formula α)} (B) : LK Δ Γ → LK Δ (B ::ₘ Γ)
@@ -77,8 +81,8 @@ namespace IL
 
 open Formula
 
-/-- The sequent calculus **LJ** for intuitionistic logic: `LJ Δ C` means `Δ ⊢ C` is provable,
-where the right-hand side `C` has at most one formula. -/
+/-- The sequent calculus **LJ** for intuitionistic logic — **Paper Section 2.1, Definition 2.7** (PDF page 8):
+`LJ Δ C` means `Δ ⊢ C` is provable, where the right-hand side `C` has at most one formula. -/
 inductive LJ : Multiset (Formula α) → Option (Formula α) → Prop
   | weakL {Δ : Multiset (Formula α)} {C} (A) : LJ Δ C → LJ (A ::ₘ Δ) C
   | contrL {Δ : Multiset (Formula α)} {C A} : LJ (A ::ₘ A ::ₘ Δ) C → LJ (A ::ₘ Δ) C
@@ -99,6 +103,11 @@ inductive LJ : Multiset (Formula α) → Option (Formula α) → Prop
   | impL {Δ : Multiset (Formula α)} {C A B} : LJ Δ (some A) → LJ (B ::ₘ Δ) C → LJ (imp A B ::ₘ Δ) C
   | impR {Δ : Multiset (Formula α)} {A B} : LJ (A ::ₘ Δ) (some B) → LJ Δ (some (imp A B))
 
+/-- General Modus Ponens rule: If Δ ⊢ A ⇛ B, then Δ + {A} ⊢ B -/
+theorem modus_ponens {Δ : Multiset (Formula α)} (h : LJ Δ (some (imp A B))) :
+    LJ (Δ + {A}) (some B) :=
+  LJ.cut h (LJ.impL (LJ.id A) ((Multiset.cons_swap B A 0).symm ▸ LJ.weakL A (LJ.id B)))
+
 end IL
 
 /-! ## LLJ for ILL -/
@@ -107,8 +116,8 @@ namespace ILL
 
 open Formula
 
-/-- The sequent calculus **LLJ** for intuitionistic linear logic: `LLJ Δ C` means `Δ ⊢ C`
-is provable, where the right-hand side `C` has at most one formula. -/
+/-- The sequent calculus **LLJ** for intuitionistic linear logic — **Paper Section 2.2, Definition 2.13** (PDF page 12):
+`LLJ Δ C` means `Δ ⊢ C` is provable, where the right-hand side `C` has at most one formula. -/
 inductive LLJ : Multiset (Formula α) → Option (Formula α) → Prop
   | id (A) : LLJ {A} (some A)
   | cut {Δ Δ' : Multiset (Formula α)} {C B} : LLJ Δ (some B) → LLJ (B ::ₘ Δ') C → LLJ (Δ + Δ') C
@@ -143,9 +152,9 @@ namespace ILLe
 
 open Formula
 
-/-- The sequent calculi **ILC** (`ι = false`) for ILLᵉ and **ILC_ι** (`ι = true`) for
-ILLᵉ_ι. **ILC_ι** additionally has the two *weakly distributive rules* `!?L^{!?}` and
-`?!R^{!?}`. -/
+/-- The sequent calculi **ILC** (`ι = false`, **Paper Section 3.1, Definition 3.3, Figure 3**, PDF pages 13–14) for ILLᵉ
+and **ILC_ι** (`ι = true`, **Paper Section 3.1, Definition 3.4**, PDF page 13) for ILLᵉ_ι.
+**ILC_ι** additionally has the two *weakly distributive rules* `!?L^{!?}` and `?!R^{!?}`. -/
 inductive ILC (ι : Bool) : Multiset (Formula α) → Multiset (Formula α) → Prop
   | bangW {Δ Γ : Multiset (Formula α)} (A) : ILC ι Δ Γ → ILC ι (bang A ::ₘ Δ) Γ
   | wnW {Δ Γ : Multiset (Formula α)} (B) : ILC ι Δ Γ → ILC ι Δ (wn B ::ₘ Γ)
@@ -202,13 +211,116 @@ inductive ILC (ι : Bool) : Multiset (Formula α) → Multiset (Formula α) → 
 
 end ILLe
 
+/-! ## LLK for CLL -/
+
+namespace CLL
+
+open ILLe.Formula
+
+/-- The sequent calculus **LLK** for classical linear logic (CLL) —
+**Paper Section 2.2, Definition 2.3, Figure 2** (PDF pages 10–11).
+`LLK Δ Γ` means the sequent `Δ ⊢ Γ` is provable in LLK.
+
+CLL formulas are `ILLe.Formula α` (= `CLL.Formula α`). -/
+inductive LLK : Multiset (Formula α) → Multiset (Formula α) → Prop
+  -- Structural rules for ! and ?
+  /-- `!W`: weakening on the left with `!A`. -/
+  | bangW {Δ Γ : Multiset (Formula α)} (A) : LLK Δ Γ → LLK (bang A ::ₘ Δ) Γ
+  /-- `?W`: weakening on the right with `?B`. -/
+  | wnW {Δ Γ : Multiset (Formula α)} (B) : LLK Δ Γ → LLK Δ (wn B ::ₘ Γ)
+  /-- `!C`: contraction of `!A` on the left. -/
+  | bangC {Δ Γ : Multiset (Formula α)} {A} :
+      LLK (bang A ::ₘ bang A ::ₘ Δ) Γ → LLK (bang A ::ₘ Δ) Γ
+  /-- `?C`: contraction of `?B` on the right. -/
+  | wnC {Δ Γ : Multiset (Formula α)} {B} :
+      LLK Δ (wn B ::ₘ wn B ::ₘ Γ) → LLK Δ (wn B ::ₘ Γ)
+  /-- `!D`: dereliction on the left (`!A` to `A`). -/
+  | bangD {Δ Γ : Multiset (Formula α)} {A} : LLK (A ::ₘ Δ) Γ → LLK (bang A ::ₘ Δ) Γ
+  /-- `?D`: dereliction on the right (`?B` to `B`). -/
+  | wnD {Δ Γ : Multiset (Formula α)} {B} : LLK Δ (B ::ₘ Γ) → LLK Δ (wn B ::ₘ Γ)
+  /-- `?L^{!?}` (storage/promotion for `?` on the left):
+  `!Δ, A ⊢ ?Γ  ⟹  !Δ, ?A ⊢ ?Γ`. -/
+  | wnL {Δ Γ : Multiset (Formula α)} {A} :
+      LLK (A ::ₘ Δ.map bang) (Γ.map wn) → LLK (wn A ::ₘ Δ.map bang) (Γ.map wn)
+  /-- `!R^{!?}` (storage/promotion for `!` on the right):
+  `!Δ ⊢ B, ?Γ  ⟹  !Δ ⊢ !B, ?Γ`. -/
+  | bangR {Δ Γ : Multiset (Formula α)} {B} :
+      LLK (Δ.map bang) (B ::ₘ Γ.map wn) → LLK (Δ.map bang) (bang B ::ₘ Γ.map wn)
+  -- Identity and Cut
+  /-- Identity axiom: `A ⊢ A`. -/
+  | id (A) : LLK {A} {A}
+  /-- Cut rule: `Δ ⊢ B, Γ` and `Δ', B ⊢ Γ'` give `Δ, Δ' ⊢ Γ, Γ'`. -/
+  | cut {Δ Γ Δ' Γ' : Multiset (Formula α)} {B} :
+      LLK Δ (B ::ₘ Γ) → LLK (B ::ₘ Δ') Γ' → LLK (Δ + Δ') (Γ + Γ')
+  -- Units: 1R, 0L, ⊤L, ⊤R, ⊥L, ⊥R
+  /-- `1R`: `Δ ⊢ 1, Γ` (axiom). -/
+  | oneR (Δ Γ : Multiset (Formula α)) : LLK Δ (one ::ₘ Γ)
+  /-- `0L`: `Δ, 0 ⊢ Γ` (axiom). -/
+  | zeroL (Δ Γ : Multiset (Formula α)) : LLK (zero ::ₘ Δ) Γ
+  /-- `⊤L`: `Δ ⊢ Γ` gives `Δ, ⊤ ⊢ Γ`. -/
+  | topL {Δ Γ : Multiset (Formula α)} : LLK Δ Γ → LLK (top ::ₘ Δ) Γ
+  /-- `⊤R`: `⊢ ⊤` (axiom). -/
+  | topR : LLK 0 {top}
+  /-- `⊥L`: `⊥ ⊢` (axiom). -/
+  | botL : LLK {bot} 0
+  /-- `⊥R`: `Δ ⊢ Γ` gives `Δ ⊢ ⊥, Γ`. -/
+  | botR {Δ Γ : Multiset (Formula α)} : LLK Δ Γ → LLK Δ (bot ::ₘ Γ)
+  -- Multiplicative conjunction ⊗ (Tensor)
+  /-- `⊗L`: `Δ, A₁, A₂ ⊢ Γ` gives `Δ, A₁ ⊗ A₂ ⊢ Γ`. -/
+  | tensorL {Δ Γ : Multiset (Formula α)} {A₁ A₂} :
+      LLK (A₁ ::ₘ A₂ ::ₘ Δ) Γ → LLK (tensor A₁ A₂ ::ₘ Δ) Γ
+  /-- `⊗R` (multiplicative split):
+  `Δ₁ ⊢ B₁, Γ₁` and `Δ₂ ⊢ B₂, Γ₂` give `Δ₁, Δ₂ ⊢ B₁ ⊗ B₂, Γ₁, Γ₂`. -/
+  | tensorR {Δ₁ Δ₂ Γ₁ Γ₂ : Multiset (Formula α)} {B₁ B₂} :
+      LLK Δ₁ (B₁ ::ₘ Γ₁) → LLK Δ₂ (B₂ ::ₘ Γ₂) →
+      LLK (Δ₁ + Δ₂) (tensor B₁ B₂ ::ₘ (Γ₁ + Γ₂))
+  -- Multiplicative disjunction ⅋ (Par)
+  /-- `⅋L` (multiplicative split):
+  `Δ₁, A₁ ⊢ Γ₁` and `Δ₂, A₂ ⊢ Γ₂` give `Δ₁, Δ₂, A₁ ⅋ A₂ ⊢ Γ₁, Γ₂`. -/
+  | parL {Δ₁ Δ₂ Γ₁ Γ₂ : Multiset (Formula α)} {A₁ A₂} :
+      LLK (A₁ ::ₘ Δ₁) Γ₁ → LLK (A₂ ::ₘ Δ₂) Γ₂ →
+      LLK (par A₁ A₂ ::ₘ (Δ₁ + Δ₂)) (Γ₁ + Γ₂)
+  /-- `⅋R`: `Δ ⊢ B₁, B₂, Γ` gives `Δ ⊢ B₁ ⅋ B₂, Γ`. -/
+  | parR {Δ Γ : Multiset (Formula α)} {B₁ B₂} :
+      LLK Δ (B₁ ::ₘ B₂ ::ₘ Γ) → LLK Δ (par B₁ B₂ ::ₘ Γ)
+  -- Additive conjunction & (With)
+  /-- `&L₁` (`i = 1`): `Δ, A₁ ⊢ Γ` gives `Δ, A₁ & A₂ ⊢ Γ`. -/
+  | withL₁ {Δ Γ : Multiset (Formula α)} {A₁} (A₂) :
+      LLK (A₁ ::ₘ Δ) Γ → LLK («with» A₁ A₂ ::ₘ Δ) Γ
+  /-- `&L₂` (`i = 2`): `Δ, A₂ ⊢ Γ` gives `Δ, A₁ & A₂ ⊢ Γ`. -/
+  | withL₂ {Δ Γ : Multiset (Formula α)} {A₂} (A₁) :
+      LLK (A₂ ::ₘ Δ) Γ → LLK («with» A₁ A₂ ::ₘ Δ) Γ
+  /-- `&R` (shared context): `Δ ⊢ B₁, Γ` and `Δ ⊢ B₂, Γ` give `Δ ⊢ B₁ & B₂, Γ`. -/
+  | withR {Δ Γ : Multiset (Formula α)} {B₁ B₂} :
+      LLK Δ (B₁ ::ₘ Γ) → LLK Δ (B₂ ::ₘ Γ) → LLK Δ («with» B₁ B₂ ::ₘ Γ)
+  -- Additive disjunction ⊕ (Plus)
+  /-- `⊕L` (shared context): `Δ, A₁ ⊢ Γ` and `Δ, A₂ ⊢ Γ` give `Δ, A₁ ⊕ A₂ ⊢ Γ`. -/
+  | plusL {Δ Γ : Multiset (Formula α)} {A₁ A₂} :
+      LLK (A₁ ::ₘ Δ) Γ → LLK (A₂ ::ₘ Δ) Γ → LLK (plus A₁ A₂ ::ₘ Δ) Γ
+  /-- `⊕R₁` (`i = 1`): `Δ ⊢ B₁, Γ` gives `Δ ⊢ B₁ ⊕ B₂, Γ`. -/
+  | plusR₁ {Δ Γ : Multiset (Formula α)} {B₁} (B₂) :
+      LLK Δ (B₁ ::ₘ Γ) → LLK Δ (plus B₁ B₂ ::ₘ Γ)
+  /-- `⊕R₂` (`i = 2`): `Δ ⊢ B₂, Γ` gives `Δ ⊢ B₁ ⊕ B₂, Γ`. -/
+  | plusR₂ {Δ Γ : Multiset (Formula α)} {B₂} (B₁) :
+      LLK Δ (B₂ ::ₘ Γ) → LLK Δ (plus B₁ B₂ ::ₘ Γ)
+  -- Linear negation ¬ / (_)⊥
+  /-- `(_)⊥L` / `¬L`: `Δ ⊢ B, Γ` gives `Δ, ¬B ⊢ Γ`. -/
+  | negL {Δ Γ : Multiset (Formula α)} {B} :
+      LLK Δ (B ::ₘ Γ) → LLK (neg B ::ₘ Δ) Γ
+  /-- `(_)⊥R` / `¬R`: `Δ, A ⊢ Γ` gives `Δ ⊢ ¬A, Γ`. -/
+  | negR {Δ Γ : Multiset (Formula α)} {A} :
+      LLK (A ::ₘ Δ) Γ → LLK Δ (neg A ::ₘ Γ)
+
+end CLL
+
 /-! ## INC for ILᵉ -/
 
 namespace ILe
 
 open Formula
 
-/-- The sequent calculus **INC** for intuitionistic logic extended ILᵉ. -/
+/-- The sequent calculus **INC** for intuitionistic logic extended ILᵉ —
+**Paper Section 3.2, Definition 3.12, Figure 4** (PDF pages 20–21). -/
 inductive INC : Multiset (Formula α) → Multiset (Formula α) → Prop
   | weakL {Δ Γ : Multiset (Formula α)} (A) : INC Δ Γ → INC (A ::ₘ Δ) Γ
   | wnW {Δ Γ : Multiset (Formula α)} (B) : INC Δ Γ → INC Δ (wn B ::ₘ Γ)
@@ -255,7 +367,8 @@ namespace CLLneg
 
 open Formula
 
-/-- The sequent calculus **CLC** for classical linear logic negative CLL⁻. -/
+/-- The sequent calculus **CLC** for classical linear logic negative CLL⁻ —
+**Paper Section 3.3, Definition 3.20, Figure 5** (PDF pages 25–26). -/
 inductive CLC : Multiset (Formula α) → Multiset (Formula α) → Prop
   | bangW {Δ Γ : Multiset (Formula α)} (A) : CLC Δ Γ → CLC (bang A ::ₘ Δ) Γ
   | weakR {Δ Γ : Multiset (Formula α)} (B) : CLC Δ Γ → CLC Δ (B ::ₘ Γ)
@@ -302,14 +415,16 @@ end CLLneg
 
 /-! ## Unlinearisation and classicalisation of a sequent calculus -/
 
-/-- **Unlinearisation** `C_!` of a sequent calculus `C` having of-course `!`: its provable
-sequents `Δ ⊢ Γ` are those for which `!Δ ⊢ Γ` is provable in `C`. -/
+/-- **Unlinearisation** `C_!` of a sequent calculus `C` having of-course `!` —
+**Paper Section 1.3, Definition 1.1** (PDF page 4):
+its provable sequents `Δ ⊢ Γ` are those for which `!Δ ⊢ Γ` is provable in `C`. -/
 def Unlinearisation {F : Type u} (bang : F → F) (C : Multiset F → Multiset F → Prop) :
     Multiset F → Multiset F → Prop :=
   fun Δ Γ => C (Δ.map bang) Γ
 
-/-- **Classicalisation** `C_?` of a sequent calculus `C` having why-not `?`: its provable
-sequents `Δ ⊢ Γ` are those for which `Δ ⊢ ?Γ` is provable in `C`. -/
+/-- **Classicalisation** `C_?` of a sequent calculus `C` having why-not `?` —
+**Paper Section 1.3, Definition 1.1** (PDF page 4):
+its provable sequents `Δ ⊢ Γ` are those for which `Δ ⊢ ?Γ` is provable in `C`. -/
 def Classicalisation {F : Type u} (wn : F → F) (C : Multiset F → Multiset F → Prop) :
     Multiset F → Multiset F → Prop :=
   fun Δ Γ => C Δ (Γ.map wn)

@@ -5,6 +5,7 @@ public import RequestProject.Logics.Util
 /-!
 # Unlinearisation `CLL⁻ ⟶ CL`: the translation `𝒯_!` of LK into CLC
 
+**Paper Section 3.3, Lemma 3.22** (`Translation 𝒯_! of LK into CLC`, PDF p. 26):
 Every provable sequent `Δ ⊢ Γ` of **LK** is translated to the provable sequent
 `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` of **CLC**, i.e. to a provable sequent of the unlinearisation `CLC_!`.
 -/
@@ -57,8 +58,9 @@ lemma map_bang_Tbang (Δ : Multiset (CL.Formula α)) :
     (Δ.map Tbang).map CLLneg.Formula.bang = Δ.map (fun A => .bang (Tbang A)) := by
   simp only [Multiset.map_map]; rfl
 
-/-- **Translation `𝒯_!` of LK into CLC** (unlinearisation `CLL⁻ ⟶ CL`): if `Δ ⊢ Γ` is
-provable in **LK**, then `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` is provable in **CLC**. -/
+/-- **Translation `𝒯_!` of LK into CLC** (unlinearisation `CLL⁻ ⟶ CL`) —
+**Paper Section 3.3, Lemma 3.22** (`Translation 𝒯_! of LK into CLC`, PDF p. 26):
+if `Δ ⊢ Γ` is provable in **LK**, then `!𝒯_!(Δ) ⊢ 𝒯_!(Γ)` is provable in **CLC**. -/
 theorem LK.toCLC {Δ Γ : Multiset (CL.Formula α)} (h : LK Δ Γ) :
     Unlinearisation CLLneg.Formula.bang CLC (Δ.map Tbang) (Γ.map Tbang) := by
   unfold Unlinearisation
