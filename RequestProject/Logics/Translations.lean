@@ -32,8 +32,9 @@ is realised by a translation of formulas going in the *opposite* direction (from
 Girard's translation needs a translation of falsity `ff`; since ILL (as defined in the paper)
 has neither `0` nor `⊥`, we define it as a partial map `IL.girard : IL → Option ILL`, which is
 defined exactly on the `ff`-free formulas. On those formulas it agrees with `ILe.T ∘ IL.embed`
-(`IL.embed_girard`), which is what makes the top square commute; `IL.girardE := ILe.T ∘ IL.embed`
-is the total version landing in ILLᵉ (with `ff ↦ !⊥`).
+(`IL.embed_girard`), which is what makes the top square commute. We also use
+the total version `IL.girardE` landing in ILLᵉ (with `ff ↦ 0` — Girard's choice; this is
+what makes ex falso `ff ⊢ B` of **LJ** translate to a provable sequent `!0 ⊢ B°`).
 -/
 
 @[expose] public section
@@ -45,7 +46,7 @@ variable {α : Type u}
 /-! ## The two conservative extensions (vertical top arrows) -/
 
 /-- Embedding of ILL formulas into ILLᵉ formulas (`A ⊸ B ↦ ¬A ⅋ B`) —
-**Paper Section 3.1**, Corollary 3.7 (`ILC(ι) as a conservative extension of LLJ`, PDF p. 16). -/
+**Paper Section 3.1**, Corollary 3.7 (`ILC as a conservative extension of LLJ`, PDF p. 16). -/
 def ILL.embed : ILL.Formula α → ILLe.Formula α
   | .var x => .var x
   | .top => .top
@@ -103,9 +104,21 @@ def IL.girard : IL.Formula α → Option (ILL.Formula α)
   | .disj A B => do return .plus (.bang (← girard A)) (.bang (← girard B))
   | .imp A B => do return .limp (.bang (← girard A)) (← girard B)
 
-/-- The total version of Girard's translation, landing in ILLᵉ (with `ff ↦ !⊥`):
-`𝒯_! ∘ embed` — **Paper Section 1.3 / Section 3.2** (PDF p. 3, 17). -/
-def IL.girardE (A : IL.Formula α) : ILLe.Formula α := ILe.T (IL.embed A)
+/-- The total version of Girard's translation, landing in ILLᵉ (with `ff ↦ 0`):
+`X ↦ X`, `⊤ ↦ ⊤`, `ff ↦ 0`, `A & B ↦ A° & B°`, `A ∨ B ↦ !A° ⊕ !B°`, `A ⇒ B ↦ !A° ⊸ B°` —
+**Paper Section 1.3 / Section 3.2** (PDF p. 3, 17).
+On `ff`-free formulas it agrees with `𝒯_! ∘ embed` (`IL.girardE_eq_T_embed`). -/
+def IL.girardE : IL.Formula α → ILLe.Formula α
+  | .var x => .var x
+  | .top => .top
+  | .ff => .zero
+  | .with A B => .with (girardE A) (girardE B)
+  | .disj A B => .plus (.bang (girardE A)) (.bang (girardE B))
+  | .imp A B => ILLe.Formula.limp (.bang (girardE A)) (girardE B)
+
+/-- Girard's translation of the (at most one formula) succedent of an intuitionistic sequent:
+an empty succedent is sent to `0`. -/
+def IL.girardS (C : Option (IL.Formula α)) : ILLe.Formula α := (C.map IL.girardE).getD .zero
 
 /-! ## Classicalisation `(_)_?` (vertical bottom arrows) -/
 
@@ -188,5 +201,35 @@ theorem IL.embed_girard {A : IL.Formula α} {B : ILL.Formula α} (h : IL.girard 
       Option.some.injEq] at h
     obtain ⟨B₁, h₁, B₂, h₂, rfl⟩ := h
     simp [ILL.embed, IL.embed, ILe.T, ih₁ h₁, ih₂ h₂]
+
+/-- On `ff`-free formulas, the total Girard translation `IL.girardE` agrees with the partial
+one `IL.girard` (followed by the embedding ILL → ILLᵉ). -/
+theorem IL.embed_girard_eq_girardE {A : IL.Formula α} {B : ILL.Formula α}
+    (h : IL.girard A = some B) : ILL.embed B = IL.girardE A := by
+  induction A generalizing B with
+  | var x => simp [IL.girard] at h; subst h; rfl
+  | top => simp [IL.girard] at h; subst h; rfl
+  | ff => simp [IL.girard] at h
+  | «with» A₁ A₂ ih₁ ih₂ =>
+    simp only [IL.girard, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨B₁, h₁, B₂, h₂, rfl⟩ := h
+    simp [ILL.embed, IL.girardE, ih₁ h₁, ih₂ h₂]
+  | disj A₁ A₂ ih₁ ih₂ =>
+    simp only [IL.girard, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨B₁, h₁, B₂, h₂, rfl⟩ := h
+    simp [ILL.embed, IL.girardE, ih₁ h₁, ih₂ h₂]
+  | imp A₁ A₂ ih₁ ih₂ =>
+    simp only [IL.girard, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨B₁, h₁, B₂, h₂, rfl⟩ := h
+    simp [ILL.embed, IL.girardE, ih₁ h₁, ih₂ h₂]
+
+/-- On `ff`-free formulas, Girard's translation agrees with `𝒯_! ∘ embed` (the route
+IL → ILᵉ → ILLᵉ of the diagram). -/
+theorem IL.girardE_eq_T_embed {A : IL.Formula α} {B : ILL.Formula α}
+    (h : IL.girard A = some B) : IL.girardE A = ILe.T (IL.embed A) :=
+  (IL.embed_girard_eq_girardE h).symm.trans (IL.embed_girard h)
 
 end

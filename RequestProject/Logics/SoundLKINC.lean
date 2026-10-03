@@ -57,10 +57,8 @@ open ILe
 /-- **Translation `𝒯_?` of LK into INC** (classicalisation `ILᵉ ⟶ CL`) —
 **Paper Section 3.2, Lemma 3.15** (`Translation 𝒯_? of LK into INC`, PDF p. 22):
 if `Δ ⊢ Γ` is provable in **LK**, then `𝒯_?(Δ) ⊢ ?𝒯_?(Γ)` is provable in **INC**. -/
-theorem LK.toINC
-  {Δ Γ : Multiset (CL.Formula α)}
-  (h : LK Δ Γ) :
-  Classicalisation ILe.Formula.wn INC (Δ.map Twn) (Γ.map Twn) := by
+theorem LK.toINC {Δ Γ : Multiset (CL.Formula α)} (h : LK Δ Γ) :
+    Classicalisation ILe.Formula.wn INC (Δ.map Twn) (Γ.map Twn) := by
   unfold Classicalisation
   induction h with
   | weakL A _ ih => msimpa [Twn] using INC.weakL _ ih

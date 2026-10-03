@@ -15,14 +15,13 @@ ILLᵉ_ι   ──unlinearisation (_)_!──▶  ILᵉ
 CLL⁻     ──unlinearisation (_)_!──▶  CL
 ```
 
-### Book / Paper Correspondence (PDF `arXiv:2001.06138v3`):
+### Chapter / Paper Mapping (ArXivSequentCalculi.tex)
 * Diagram & Main Results: **Section 1.3** (PDF pages 3–5).
 * `CL.Formula`: **Section 2.1, Definition 2.2** (PDF page 8).
 * `IL.Formula`: **Section 2.1, Definition 2.5** (PDF page 8).
 * `ILL.Formula`: **Section 2.2, Definition 2.10** (PDF page 10).
-* `ILLe.Formula` / `CLL.Formula`: **Section 3.1, Definition 3.2** (PDF page 13) /
-  classical linear logic (CLL). The two languages are **identical**: every CLL formula
-  is an `ILLe.Formula` and vice versa. `CLL.Formula` is just a namespace alias.
+* `ILLe.Formula`: **Section 3.1, Definition 3.2** (PDF page 13).
+* `CLL.Formula`: **Section 2.2, Definition 2.10** (PDF page 10).
 * `ILe.Formula`: **Section 3.2, Definition 3.11** (PDF page 20).
 * `CLLneg.Formula`: **Section 3.3, Definition 3.19** (PDF page 25).
 
@@ -94,8 +93,7 @@ inductive ILL.Formula (α : Type u) : Type u
   deriving DecidableEq
 
 /-- Formulas of intuitionistic linear logic (ι-)extended (ILLᵉ, ILLᵉ_ι) —
-**Paper Section 3.1, Definition 3.2** (PDF page 13):
-both logics share this formal language:
+**Paper Section 3.1, Definition 3.2** (PDF page 13); both logics share this formal language:
 `A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | ¬A | !A | ?A`
 where `¬` is the *up-linear negation*. -/
 inductive ILLe.Formula (α : Type u) : Type u
@@ -140,10 +138,9 @@ Linear negation `¬` plays the role of `(—)⊥`, so `X⊥ = ¬(var X)`.
 The formula type `CLL.Formula α` is therefore defined as an abbreviation for `ILLe.Formula α`.
 -/
 
-/-- Formulas of classical linear logic (CLL).
-The language coincides with `ILLe.Formula`:
-`A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | ¬A | !A | ?A`
-where `¬A` is linear negation `A⊥`. -/
+/-- Formulas of Classical Linear Logic (CLL) — **Paper Section 2.2, Definition 2.10** (PDF page 10):
+`A, B ::= X | ⊤ | ⊥ | 1 | 0 | A ⊗ B | A ⅋ B | A & B | A ⊕ B | A⊥ | !A | ?A`.
+The formula language coincides with `ILLe.Formula α`. We provide `CLL.Formula` as a type alias. -/
 abbrev CLL.Formula (α : Type u) := ILLe.Formula α
 
 /-- Linear negation in CLL: `A⊥ := ¬A` (the `neg` constructor of `ILLe.Formula`). -/

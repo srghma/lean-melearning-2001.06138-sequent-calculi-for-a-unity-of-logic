@@ -10,10 +10,9 @@ Sequent calculi embodying the six logics:
 * `CL.LK`        — the sequent calculus **LK** for CL (**Section 2.1, Definition 2.4, Figure 1**, PDF pages 8–9);
 * `IL.LJ`        — the sequent calculus **LJ** for IL (**Section 2.1, Definition 2.7**, PDF page 8);
 * `ILL.LLJ`      — the sequent calculus **LLJ** for ILL (**Section 2.2, Definition 2.13**, PDF page 12);
+* `CLL.LLK`      — the sequent calculus **LLK** for CLL (**Section 2.2, Definition 2.3, Figure 2**, PDF pages 10–11);
 * `ILLe.ILC ι`   — the sequent calculus **ILC** for ILLᵉ (`ι = false`, **Section 3.1, Definition 3.3, Figure 3**, PDF pages 13–14)
-                   and **ILC_ι** for ILLᵉ_ι (`ι = true`, **Section 3.1, Definition 3.4**, PDF page 13, adding weakly distributive rules);
-* `CLL.LLK`      — the classical symmetric sequent calculus **LLK** for CLL; `CLL.Formula` is an
-                   abbreviation for `ILLe.Formula` (identical languages);
+                   and **ILC_ι** for ILLᵉ_ι (`ι = true`, **Section 3.1, Definition 3.4**, PDF page 13, adding the *weakly distributive rules*);
 * `ILe.INC`      — the sequent calculus **INC** for ILᵉ (**Section 3.2, Definition 3.12, Figure 4**, PDF pages 20–21);
 * `CLLneg.CLC`   — the sequent calculus **CLC** for CLL⁻ (**Section 3.3, Definition 3.20, Figure 5**, PDF pages 25–26).
 
@@ -26,14 +25,15 @@ We formalise *provability*: each calculus is an inductive predicate `Δ ⊢ Γ` 
 * For the intuitionistic calculi **LJ** and **LLJ**, whose sequents have at most one formula
   on the right, the right-hand side is an `Option`.
 * `!Δ` is written `Δ.map .bang` and `?Γ` is written `Γ.map .wn`.
-* **LJ** follows the explicit figure of the rules of LJ in the source (the rules of LK with
-  intuitionistic sequents, with `⇒L` in its usual form `Δ ⊢ A`, `Δ, B ⊢ C` / `Δ, A ⇒ B ⊢ C`),
-  *without* right weakening; this is the reading under which **INC** is a conservative
-  extension of **LJ** (**INC** has no unrestricted right weakening).
+* **LJ** is the sequent calculus for full intuitionistic logic: the rules of LK restricted to
+  intuitionistic sequents (as in the prose definition of the source), with `⇒L` in its usual
+  form `Δ ⊢ A`, `Δ, B ⊢ C` / `Δ, A ⇒ B ⊢ C`. In particular it contains the right weakening
+  `Δ ⊢` / `Δ ⊢ B` (the intuitionistic instance of LK's `WR`), which yields ex falso
+  `ff ⊢ B`. (The explicit rule figure of LJ in the source omits this rule; that calculus is
+  minimal logic, kept as `IL.LJm` in `RequestProject/Semantics/Heyting.lean`.)
 
-Finally we define the two generic operations on sequent calculi:
-* *unlinearisation* `(_)_!` (**Section 1.3, Definition 1.1**, PDF page 4)
-* *classicalisation* `(_)_?` (**Section 1.3, Definition 1.1**, PDF page 4).
+Finally we define the two generic operations on sequent calculi, *unlinearisation* `(_)_!`
+and *classicalisation* `(_)_?` (**Section 1.3, Definition 1.1**, PDF page 4).
 -/
 
 @[expose] public section
@@ -48,8 +48,9 @@ namespace CL
 
 open Formula
 
-/-- The sequent calculus **LK** for classical logic — **Paper Section 2.1, Definition 2.4, Figure 1** (PDF pages 8–9):
-`LK Δ Γ` means `Δ ⊢ Γ` is provable in LK. -/
+/-- The sequent calculus **LK** for classical logic —
+**Paper Section 2.1, Definition 2.4, Figure 1** (PDF pages 8–9).
+`LK Δ Γ` means the sequent `Δ ⊢ Γ` is provable in LK. -/
 inductive LK : Multiset (Formula α) → Multiset (Formula α) → Prop
   | weakL {Δ Γ : Multiset (Formula α)} (A) : LK Δ Γ → LK (A ::ₘ Δ) Γ
   | weakR {Δ Γ : Multiset (Formula α)} (B) : LK Δ Γ → LK Δ (B ::ₘ Γ)
@@ -81,11 +82,14 @@ namespace IL
 
 open Formula
 
-/-- The sequent calculus **LJ** for intuitionistic logic — **Paper Section 2.1, Definition 2.7** (PDF page 8):
+/-- The sequent calculus **LJ** for intuitionistic logic —
+**Paper Section 2.1, Definition 2.7** (PDF page 8).
 `LJ Δ C` means `Δ ⊢ C` is provable, where the right-hand side `C` has at most one formula. -/
 inductive LJ : Multiset (Formula α) → Option (Formula α) → Prop
   | weakL {Δ : Multiset (Formula α)} {C} (A) : LJ Δ C → LJ (A ::ₘ Δ) C
   | contrL {Δ : Multiset (Formula α)} {C A} : LJ (A ::ₘ A ::ₘ Δ) C → LJ (A ::ₘ Δ) C
+  /-- right weakening `Δ ⊢` / `Δ ⊢ B` (the intuitionistic instance of LK's `WR`) -/
+  | weakR {Δ : Multiset (Formula α)} (B) : LJ Δ none → LJ Δ (some B)
   | id (A) : LJ {A} (some A)
   | cut {Δ Δ' : Multiset (Formula α)} {C B} : LJ Δ (some B) → LJ (B ::ₘ Δ') C → LJ (Δ + Δ') C
   | topL {Δ : Multiset (Formula α)} {C} : LJ Δ C → LJ (top ::ₘ Δ) C
@@ -103,8 +107,8 @@ inductive LJ : Multiset (Formula α) → Option (Formula α) → Prop
   | impL {Δ : Multiset (Formula α)} {C A B} : LJ Δ (some A) → LJ (B ::ₘ Δ) C → LJ (imp A B ::ₘ Δ) C
   | impR {Δ : Multiset (Formula α)} {A B} : LJ (A ::ₘ Δ) (some B) → LJ Δ (some (imp A B))
 
-/-- General Modus Ponens rule: If Δ ⊢ A ⇛ B, then Δ + {A} ⊢ B -/
-theorem modus_ponens {Δ : Multiset (Formula α)} (h : LJ Δ (some (imp A B))) :
+/-- General Modus Ponens rule: If `Δ ⊢ A ⇒ B`, then `Δ + {A} ⊢ B`. -/
+theorem modus_ponens {Δ : Multiset (Formula α)} {A B : Formula α} (h : LJ Δ (some (imp A B))) :
     LJ (Δ + {A}) (some B) :=
   LJ.cut h (LJ.impL (LJ.id A) ((Multiset.cons_swap B A 0).symm ▸ LJ.weakL A (LJ.id B)))
 
@@ -116,7 +120,8 @@ namespace ILL
 
 open Formula
 
-/-- The sequent calculus **LLJ** for intuitionistic linear logic — **Paper Section 2.2, Definition 2.13** (PDF page 12):
+/-- The sequent calculus **LLJ** for intuitionistic linear logic —
+**Paper Section 2.2, Definition 2.13** (PDF page 12).
 `LLJ Δ C` means `Δ ⊢ C` is provable, where the right-hand side `C` has at most one formula. -/
 inductive LLJ : Multiset (Formula α) → Option (Formula α) → Prop
   | id (A) : LLJ {A} (some A)

@@ -5,12 +5,9 @@ public import RequestProject.Logics.Diagram
 /-!
 # Sanity-check examples
 
-* The law of excluded middle `⊢ ∼A ∨ A` is provable in **LK** —
-  **Paper Section 2.1**, PDF p. 8 (explicit proof tree);
-  its translation `⊢ ?𝒯(∼A ∨ A)` is provable in **ILC_ι** (**Section 1.3**, PDF p. 5).
-* The sequent `!?A ⊢ ?!A` is provable in **ILC_ι** —
-  **Paper Section 3.1, Definition 3.4** (weakly distributive rules, PDF p. 13);
-  and **Appendix A** (Axiom Dist: `!?A ⊢ ?!A`, PDF p. 38).
+* the law of excluded middle `⊢ ∼A ∨ A` is provable in **LK** (the derivation given in the
+  paper), and hence its translation is provable in **ILC_ι**;
+* the sequent `!?A ⊢ ?!A` is provable in **ILC_ι**.
 -/
 
 @[expose] public section
@@ -20,7 +17,7 @@ universe u
 variable {α : Type u}
 
 /-- The law of excluded middle `⊢ ∼A ∨ A` in **LK** —
-**Paper Section 2.1**, PDF p. 8 (the explicit derivation in LK). -/
+**Paper Section 2.1** (PDF page 8), following Gentzen's derivation. -/
 theorem CL.LK.lem (A : CL.Formula α) : CL.LK 0 {.disj A.neg A} := by
   have h1 : CL.LK (A ::ₘ 0) (.ff ::ₘ {A}) := CL.LK.ffR (CL.LK.id A)
   have h2 := CL.LK.impR h1
@@ -33,7 +30,7 @@ theorem CL.LK.lem (A : CL.Formula α) : CL.LK 0 {.disj A.neg A} := by
   exact CL.LK.contrR (CL.LK.disjR₂ A.neg h4)
 
 /-- The translation of the law of excluded middle through the diagram: `⊢ ?𝒯(∼A ∨ A)` is
-provable in **ILC_ι** — **Paper Section 1.3**, PDF p. 5. -/
+provable in **ILC_ι** — **Paper Section 3.4** (PDF page 29). -/
 example (A : CL.Formula α) :
     ILLe.ILC true 0 {.wn (CL.Tbangwn (.disj A.neg A))} := by
   simpa using CL.LK.toILC_viaILe (CL.LK.lem A)
