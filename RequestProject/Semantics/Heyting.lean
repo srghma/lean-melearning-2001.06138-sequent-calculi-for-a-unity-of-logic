@@ -76,13 +76,13 @@ def Formula.eval {H : Type v} [HeytingAlgebra H] (v : α → H) (A : Formula α)
 
 /-- Validity of `Δ ⊢ C` in a Heyting algebra: `⋀ ⟦Δ⟧ ≤ ⟦C⟧`, where an empty succedent is
 read as `⊥`. -/
-def Valid {H : Type v} [HeytingAlgebra H] (v : α → H) (Δ : Multiset (Formula α))
+def Valid {H : Type v} [HeytingAlgebra H] (v : α → H) (Δ : Finset (Formula α))
     (C : Option (Formula α)) : Prop :=
-  ValidG ⊥ v Δ C
+  Δ.inf (Formula.eval v) ≤ C.elim ⊥ (Formula.eval v)
 
-lemma valid_iff {H : Type v} [HeytingAlgebra H] (v : α → H) (Δ : Multiset (Formula α))
+lemma valid_iff {H : Type v} [HeytingAlgebra H] (v : α → H) (Δ : Finset (Formula α))
     (C : Option (Formula α)) :
-    Valid v Δ C ↔ (Δ.map (Formula.eval v)).inf ≤ C.elim ⊥ (Formula.eval v) := Iff.rfl
+    Valid v Δ C ↔ Δ.inf (Formula.eval v) ≤ C.elim ⊥ (Formula.eval v) := Iff.rfl
 
 /-! ## Minimal logic: LJ without right weakening -/
 
@@ -158,7 +158,7 @@ theorem LJm.soundG {H : Type v} [GeneralizedHeytingAlgebra H] (f : H) (v : α �
 
 /-- **Soundness of LJm for Heyting algebras.** -/
 theorem LJm.sound {H : Type v} [HeytingAlgebra H] (v : α → H) {Δ : Multiset (Formula α)}
-    {C : Option (Formula α)} (h : LJm Δ C) : Valid v Δ C :=
+    {C : Option (Formula α)} (h : LJm Δ C) : (Δ.map (Formula.eval v)).inf ≤ C.elim ⊥ (Formula.eval v) :=
   LJm.soundG ⊥ v h
 
 /-- The calculus `IL.LJm` (without right weakening) has **no ex falso**: `ff ⊢ X` is not
@@ -172,54 +172,76 @@ theorem LJm.not_exfalso (x : α) : ¬ LJm {ff} (some (var x)) := by
 /-! ## Intuitionistic logic proper: LJ (with ex falso) -/
 
 /-- Every **LJm**-provable sequent is **LJ**-provable. -/
-theorem LJm.toLJ {Δ : Multiset (Formula α)} {C : Option (Formula α)} (h : LJm Δ C) :
-    LJ Δ C := by
+theorem LJm.toLJ [DecidableEq α] {Δ : Multiset (Formula α)} {C : Option (Formula α)} (h : LJm Δ C) :
+    LJ Δ.toFinset C := by
   induction h with
-  | weakL A _ ih => exact .weakL A ih
-  | contrL _ ih => exact .contrL ih
-  | id A => exact .id A
-  | cut _ _ ih₁ ih₂ => exact .cut ih₁ ih₂
-  | topL _ ih => exact .topL ih
-  | topR => exact .topR
-  | ffL => exact .ffL
-  | ffR _ ih => exact .ffR ih
-  | withL₁ A₂ _ ih => exact .withL₁ A₂ ih
-  | withL₂ A₁ _ ih => exact .withL₂ A₁ ih
-  | withR _ _ ih₁ ih₂ => exact .withR ih₁ ih₂
-  | disjL _ _ ih₁ ih₂ => exact .disjL ih₁ ih₂
-  | disjR₁ B₂ _ ih => exact .disjR₁ B₂ ih
-  | disjR₂ B₁ _ ih => exact .disjR₂ B₁ ih
-  | impL _ _ ih₁ ih₂ => exact .impL ih₁ ih₂
-  | impR _ ih => exact .impR ih
+  | weakL A _ ih =>
+    simpa only [Multiset.toFinset_cons] using LJ.weakL A ih
+  | contrL _ ih =>
+    simpa only [Multiset.toFinset_cons, Finset.insert_idem] using ih
+  | id A => simpa using LJ.id A
+  | cut _ _ ih₁ ih₂ =>
+    have hcut := LJ.cut ih₁ (by simpa using ih₂)
+    simpa [Multiset.toFinset_add] using hcut
+  | topL _ ih =>
+    simpa only [Multiset.toFinset_cons] using LJ.topL ih
+  | topR => simpa using LJ.topR
+  | ffL => simpa using LJ.ffL
+  | ffR _ ih => exact LJ.ffR ih
+  | withL₁ A₂ _ ih =>
+    simpa only [Multiset.toFinset_cons] using LJ.withL₁ A₂ (by simpa using ih)
+  | withL₂ A₁ _ ih =>
+    simpa only [Multiset.toFinset_cons] using LJ.withL₂ A₁ (by simpa using ih)
+  | withR _ _ ih₁ ih₂ => exact LJ.withR ih₁ ih₂
+  | disjL _ _ ih₁ ih₂ =>
+    simpa only [Multiset.toFinset_cons] using LJ.disjL (by simpa using ih₁) (by simpa using ih₂)
+  | disjR₁ B₂ _ ih => exact LJ.disjR₁ B₂ ih
+  | disjR₂ B₁ _ ih => exact LJ.disjR₂ B₁ ih
+  | impL _ _ ih₁ ih₂ =>
+    simpa only [Multiset.toFinset_cons] using LJ.impL ih₁ (by simpa using ih₂)
+  | impR _ ih =>
+    exact LJ.impR (by simpa using ih)
 
 /-- **Soundness of LJ for Heyting algebras.** -/
-theorem LJ.sound {H : Type v} [HeytingAlgebra H] (v : α → H) {Δ : Multiset (Formula α)}
+theorem LJ.sound [DecidableEq α] {H : Type v} [HeytingAlgebra H] (v : α → H) {Δ : Finset (Formula α)}
     {C : Option (Formula α)} (h : LJ Δ C) : Valid v Δ C := by
-  rw [valid_iff]
+  unfold Valid
   induction h with
-  | weakL A _ ih => simpa using inf_le_of_right_le ih
-  | contrL _ ih => simpa using ih
+  | weakL A _ ih =>
+    rw [Finset.inf_insert]
+    exact inf_le_of_right_le ih
   | weakR B _ ih => exact ih.trans bot_le
-  | id A => simp
-  | cut _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.map_add, Multiset.inf_cons, Multiset.inf_add,
-      Option.elim] at *
-    exact (inf_le_inf_right _ ih₁).trans ih₂
-  | topL _ ih => simpa [eval, evalG] using ih
+  | id A => simp [eval]
+  | @cut Δ Δ' C B _ _ ih₁ ih₂ =>
+    rw [Finset.inf_union]
+    rw [Finset.inf_insert] at ih₂
+    calc Δ.inf (eval v) ⊓ Δ'.inf (eval v)
+      _ ≤ eval v B ⊓ Δ'.inf (eval v) := inf_le_inf_right _ ih₁
+      _ ≤ C.elim ⊥ (eval v) := ih₂
+  | topL _ ih =>
+    rw [Finset.inf_insert]
+    simpa [eval, evalG] using ih
   | topR => simp [eval, evalG]
   | ffL => simp [eval, evalG]
   | ffR _ ih => simpa [eval, evalG] using ih
-  | withL₁ A₂ _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval, evalG] at *
-    exact le_trans (inf_le_inf_right _ inf_le_left) ih
-  | withL₂ A₁ _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval, evalG] at *
-    exact le_trans (inf_le_inf_right _ inf_le_right) ih
+  | @withL₁ Δ C A₁ A₂ _ ih =>
+    rw [Finset.inf_insert] at *
+    simp only [eval, evalG] at *
+    calc (evalG ⊥ v A₁ ⊓ evalG ⊥ v A₂) ⊓ Δ.inf (eval v)
+      _ ≤ evalG ⊥ v A₁ ⊓ Δ.inf (eval v) := inf_le_inf_right _ inf_le_left
+      _ ≤ C.elim ⊥ (eval v) := ih
+  | @withL₂ Δ C A₂ A₁ _ ih =>
+    rw [Finset.inf_insert] at *
+    simp only [eval, evalG] at *
+    calc (evalG ⊥ v A₁ ⊓ evalG ⊥ v A₂) ⊓ Δ.inf (eval v)
+      _ ≤ evalG ⊥ v A₂ ⊓ Δ.inf (eval v) := inf_le_inf_right _ inf_le_right
+      _ ≤ C.elim ⊥ (eval v) := ih
   | withR _ _ ih₁ ih₂ =>
     simp only [Option.elim, eval, evalG] at *
     exact le_inf ih₁ ih₂
   | disjL _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval, evalG] at *
+    rw [Finset.inf_insert] at *
+    simp only [eval, evalG] at *
     rw [inf_sup_right]
     exact sup_le ih₁ ih₂
   | disjR₁ B₂ _ ih =>
@@ -229,12 +251,14 @@ theorem LJ.sound {H : Type v} [HeytingAlgebra H] (v : α → H) {Δ : Multiset (
     simp only [Option.elim, eval, evalG] at *
     exact ih.trans le_sup_right
   | impL _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, Option.elim, eval, evalG] at *
+    rw [Finset.inf_insert] at *
+    simp only [Option.elim, eval, evalG] at *
     refine le_trans ?_ ih₂
     exact le_inf (le_trans (le_inf inf_le_left (inf_le_right.trans ih₁)) himp_inf_le)
       inf_le_right
   | impR _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, Option.elim, eval, evalG] at *
+    rw [Finset.inf_insert] at ih
+    simp only [Option.elim, eval, evalG] at *
     rw [le_himp_iff, inf_comm]
     exact ih
 
@@ -407,30 +431,50 @@ end LJm
 
 namespace LJ
 
-lemma cast' {Δ Δ' : Multiset (Formula α)} {C C' : Option (Formula α)} (h : LJ Δ C)
+lemma cast' [DecidableEq α] {Δ Δ' : Finset (Formula α)} {C C' : Option (Formula α)} (h : LJ Δ C)
     (h₁ : Δ = Δ') (h₂ : C = C') : LJ Δ' C' := h₁ ▸ h₂ ▸ h
 
 /-- The provability preorder of **LJ** on single formulas. -/
-def impPreorder (α : Type u) : ImpPreorder α where
+def impPreorder (α : Type u) [DecidableEq α] : ImpPreorder α where
   R A B := LJ {A} (some B)
   refl := id
-  trans h₁ h₂ := (cut (Δ' := 0) h₁ h₂).cast' (by simp) rfl
-  le_top A := weakL (Δ := 0) A topR
-  with_le_left A B := withL₁ (Δ := 0) B (id A)
-  with_le_right A B := withL₂ (Δ := 0) A (id B)
+  trans h₁ h₂ := (cut (Δ' := ∅) h₁ h₂).cast' (by simp) rfl
+  le_top A := weakL A topR
+  with_le_left A B := withL₁ (Δ := ∅) B (id A)
+  with_le_right A B := withL₂ (Δ := ∅) A (id B)
   le_with := withR
   le_disj_left A B := disjR₁ B (id A)
   le_disj_right A B := disjR₂ A (id B)
-  disj_le := disjL (Δ := 0)
+  disj_le h₁ h₂ := disjL (Δ := ∅) h₁ h₂
   le_imp_iff {A B C} := by
     constructor
     · intro h
-      have h1 : LJ (A ::ₘ {C}) (some B) :=
-        (cut (Δ' := {A}) h (LJm.mp A B).toLJ).cast' (by rw [add_comm]; rfl) rfl
-      have h2 := withL₂ (Δ := {C}) C h1
-      exact contrL (withL₁ (Δ := {«with» C A}) A (h2.cast' (LJm.swap2 _ _) rfl))
+      have hmp : LJ (imp A B ::ᵢ {A}) (some B) := by
+        have h1 : LJ (B ::ᵢ {A}) (some B) := by
+          have e : (B ::ᵢ {A} : Finset (Formula α)) = A ::ᵢ {B} := by ext; simp [or_comm]
+          rw [e]; exact weakL A (id B)
+        exact impL (id A) h1
+      have h1 : LJ (A ::ᵢ {C}) (some B) := by
+        have hcut := cut (Δ' := {A}) h hmp
+        have e : ({C} ∪ {A} : Finset (Formula α)) = A ::ᵢ {C} := by ext; simp [or_comm]
+        rwa [e] at hcut
+      have h2 : LJ («with» C A ::ᵢ {C}) (some B) := withL₂ C h1
+      have e2 : («with» C A ::ᵢ {C} : Finset (Formula α)) = C ::ᵢ {«with» C A} := by ext; simp [or_comm]
+      rw [e2] at h2
+      have h3 := withL₁ A h2
+      simpa using h3
     · intro h
-      exact impR (Δ := {C}) ((cut (Δ' := 0) (LJm.pair C A).toLJ h).cast' (by simp) rfl)
+      have hpair : LJ (A ::ᵢ ({C} : Finset (Formula α))) (some («with» C A)) := by
+        have h1 : LJ (A ::ᵢ {C}) (some C) := weakL A (id C)
+        have h2 : LJ (A ::ᵢ {C}) (some A) := by
+          have e : (A ::ᵢ {C} : Finset (Formula α)) = C ::ᵢ {A} := by ext; simp [or_comm]
+          rw [e]; exact weakL C (id A)
+        exact withR h1 h2
+      have hcut : LJ (A ::ᵢ {C}) (some B) := by
+        have := cut (Δ' := ∅) hpair h
+        have e : (A ::ᵢ {C} : Finset (Formula α)) ∪ ∅ = A ::ᵢ {C} := by simp
+        rwa [e] at this
+      exact impR hcut
 
 end LJ
 
@@ -441,15 +485,16 @@ abbrev LindenbaumM (α : Type u) : Type u := (LJm.impPreorder α).Lindenbaum
 
 /-- The **Lindenbaum algebra of intuitionistic logic** (formulas modulo provable equivalence
 in **LJ**: `A ~ B` iff `A ⊢ B` and `B ⊢ A`). -/
-abbrev Lindenbaum (α : Type u) : Type u := (LJ.impPreorder α).Lindenbaum
+abbrev Lindenbaum (α : Type u) [DecidableEq α] : Type u := (LJ.impPreorder α).Lindenbaum
 
 /-- **The Lindenbaum algebra of LJm is a generalized Heyting algebra.** -/
 instance LindenbaumM.instGeneralizedHeytingAlgebra : GeneralizedHeytingAlgebra (LindenbaumM α) :=
   ImpPreorder.Lindenbaum.instGeneralizedHeytingAlgebra
 
 /-- **The Lindenbaum algebra of intuitionistic logic is a Heyting algebra.** -/
-instance Lindenbaum.instHeytingAlgebra : HeytingAlgebra (Lindenbaum α) :=
-  ImpPreorder.Lindenbaum.heytingAlgebra (fun A => LJ.weakR A LJ.ffL)
+instance Lindenbaum.instHeytingAlgebra [DecidableEq α] : HeytingAlgebra (Lindenbaum α) :=
+  ImpPreorder.Lindenbaum.heytingAlgebra (P := LJ.impPreorder α)
+    (fun A => show (LJ.impPreorder α).R ff A from LJ.weakR A LJ.ffL)
 
 open ImpPreorder.Lindenbaum in
 lemma LindenbaumM.evalG_mk (A : Formula α) :
@@ -463,7 +508,7 @@ lemma LindenbaumM.evalG_mk (A : Formula α) :
   | imp A B ihA ihB => simp only [evalG, ihA, ihB]; rfl
 
 open ImpPreorder.Lindenbaum in
-lemma Lindenbaum.eval_mk (A : Formula α) :
+lemma Lindenbaum.eval_mk [DecidableEq α] (A : Formula α) :
     A.eval (fun x => (mk (var x) : Lindenbaum α)) = mk A := by
   induction A with
   | var x => rfl
@@ -490,20 +535,29 @@ lemma LJm.of_inf_le (Δ : Multiset (Formula α)) :
       (by rw [add_comm]; rfl) rfl
 
 open ImpPreorder.Lindenbaum in
-lemma LJ.of_inf_le (Δ : Multiset (Formula α)) :
-    ∀ B, (Δ.map (mk : Formula α → Lindenbaum α)).inf ≤ mk B → LJ Δ (some B) := by
-  induction Δ using Multiset.induction_on with
+lemma LJ.of_inf_le [DecidableEq α] (Δ : Finset (Formula α)) :
+    ∀ B, (Δ.inf (mk : Formula α → Lindenbaum α)) ≤ mk B → LJ Δ (some B) := by
+  induction Δ using Finset.induction_on with
   | empty =>
     intro B h
-    have h' : LJ {top} (some B) := mk_le_mk.1 (by simpa using h)
-    exact (LJ.cut (Δ := 0) LJ.topR h').cast' (by simp) rfl
-  | cons A Δ ih =>
+    have h' : LJ {top} (some B) := by
+      have hle : (mk top : Lindenbaum α) ≤ mk B := by simpa using h
+      have hr : (LJ.impPreorder α).R top B := mk_le_mk.1 hle
+      exact hr
+    exact (LJ.cut (Δ' := ∅) LJ.topR h').cast' (by simp) rfl
+  | insert A Δ _ ih =>
     intro B h
-    simp only [Multiset.map_cons, Multiset.inf_cons] at h
-    have h2 : (Δ.map (mk : Formula α → Lindenbaum α)).inf ≤ mk (imp A B) := by
+    rw [Finset.inf_insert] at h
+    have h2 : (Δ.inf (mk : Formula α → Lindenbaum α)) ≤ mk (imp A B) := by
       rw [← mk_himp, le_himp_iff, inf_comm]; exact h
-    exact (LJ.cut (Δ' := {A}) (ih _ h2) (LJm.mp A B).toLJ).cast'
-      (by rw [add_comm]; rfl) rfl
+    have hmp : LJ (imp A B ::ᵢ {A}) (some B) := by
+      have h1 : LJ (B ::ᵢ {A}) (some B) := by
+        have e : (B ::ᵢ {A} : Finset (Formula α)) = A ::ᵢ {B} := by ext; simp [or_comm]
+        rw [e]; exact weakL A (id B)
+      exact impL (id A) h1
+    have hcut := LJ.cut (Δ' := {A}) (ih _ h2) hmp
+    have e : Δ ∪ {A} = A ::ᵢ Δ := by ext; simp
+    rwa [e] at hcut
 
 open ImpPreorder.Lindenbaum in
 /-- **Completeness of LJm for generalized Heyting algebras** (with a designated element
@@ -529,38 +583,44 @@ theorem LJm.iff_validG {Δ : Multiset (Formula α)} {C : Option (Formula α)} :
 
 open ImpPreorder.Lindenbaum in
 /-- **Completeness of intuitionistic logic (LJ) for Heyting algebras.** -/
-theorem LJ.complete {Δ : Multiset (Formula α)} {C : Option (Formula α)}
+theorem LJ.complete [DecidableEq α] {Δ : Finset (Formula α)} {C : Option (Formula α)}
     (h : ∀ (H : Type u) [HeytingAlgebra H] (v : α → H), Valid v Δ C) : LJ Δ C := by
   have := h (Lindenbaum α) (fun x => mk (var x))
   rw [valid_iff] at this
-  have hmap : Δ.map (Formula.eval (fun x => (mk (var x) : Lindenbaum α))) = Δ.map mk :=
-    Multiset.map_congr rfl (fun A _ => Lindenbaum.eval_mk A)
+  have hmap : Δ.inf (Formula.eval (fun x => (mk (var x) : Lindenbaum α))) = Δ.inf mk :=
+    Finset.inf_congr rfl (fun A _ => Lindenbaum.eval_mk A)
   rw [hmap] at this
-  have key : ∀ B, (Δ.map (mk : Formula α → Lindenbaum α)).inf ≤ mk B → LJ Δ (some B) :=
+  have key : ∀ B, (Δ.inf (mk : Formula α → Lindenbaum α)) ≤ mk B → LJ Δ (some B) :=
     LJ.of_inf_le Δ
   rcases C with _ | B
-  · exact (LJ.cut (Δ' := 0) (key ff this) LJ.ffL).cast' (by simp) rfl
+  · exact (LJ.cut (Δ' := ∅) (key ff this) LJ.ffL).cast' (by simp) rfl
   · exact key B (by simpa [Lindenbaum.eval_mk] using this)
 
 /-- **Heyting algebras are the algebraic models of intuitionistic logic**: a sequent is
 provable in **LJ** iff it is valid in every Heyting algebra under every valuation. -/
-theorem LJ.iff_valid {Δ : Multiset (Formula α)} {C : Option (Formula α)} :
+theorem LJ.iff_valid [DecidableEq α] {Δ : Finset (Formula α)} {C : Option (Formula α)} :
     LJ Δ C ↔ ∀ (H : Type u) [HeytingAlgebra H] (v : α → H), Valid v Δ C :=
   ⟨fun h _ _ v => h.sound v, LJ.complete⟩
 
 /-! ## The categorical picture: coloured operads -/
 
 /-- Provability in **LJ** (with a non-empty succedent) forms a thin coloured operad. -/
-def LJ.operad (α : Type u) : ThinColoredOperad (Formula α) where
+def LJ.operad (α : Type u) [DecidableEq α] : ThinColoredOperad (Formula α) where
   Hom Δ B := LJ Δ (some B)
   id := LJ.id
   comp := LJ.cut
 
 /-- **Soundness, categorically**: evaluation in a Heyting algebra is a functor of operads. -/
-def evalOperadFunctor {H : Type v} [HeytingAlgebra H] (v : α → H) :
+def evalOperadFunctor {H : Type v} [DecidableEq α] [DecidableEq H] [HeytingAlgebra H] (v : α → H) :
     ThinColoredOperad.Functor (LJ.operad α) (SemilatticeInf.toThinColoredOperad H) where
   obj := Formula.eval v
-  map h := h.sound v
+  map {Γ B} h := by
+    dsimp [SemilatticeInf.toThinColoredOperad]
+    have := h.sound v
+    unfold Valid at this
+    dsimp at this
+    rw [Finset.inf_image]
+    exact this
 
 end IL
 

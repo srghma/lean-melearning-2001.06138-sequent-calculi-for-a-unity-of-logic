@@ -40,7 +40,10 @@ and *classicalisation* `(_)_?` (**Section 1.3, Definition 1.1**, PDF page 4).
 
 universe u
 
-variable {α : Type u}
+variable {α : Type u} [DecidableEq α]
+
+/-- Notation for `Finset.insert` mirroring `::ₘ` for multisets. -/
+infixr:67 " ::ᵢ " => Insert.insert
 
 /-! ## LK for CL -/
 
@@ -51,28 +54,29 @@ open Formula
 /-- The sequent calculus **LK** for classical logic —
 **Paper Section 2.1, Definition 2.4, Figure 1** (PDF pages 8–9).
 `LK Δ Γ` means the sequent `Δ ⊢ Γ` is provable in LK. -/
-inductive LK : Multiset (Formula α) → Multiset (Formula α) → Prop
-  | weakL {Δ Γ : Multiset (Formula α)} (A) : LK Δ Γ → LK (A ::ₘ Δ) Γ
-  | weakR {Δ Γ : Multiset (Formula α)} (B) : LK Δ Γ → LK Δ (B ::ₘ Γ)
-  | contrL {Δ Γ : Multiset (Formula α)} {A} : LK (A ::ₘ A ::ₘ Δ) Γ → LK (A ::ₘ Δ) Γ
-  | contrR {Δ Γ : Multiset (Formula α)} {B} : LK Δ (B ::ₘ B ::ₘ Γ) → LK Δ (B ::ₘ Γ)
+inductive LK : Finset (Formula α) → Finset (Formula α) → Prop
+  | weakL {Δ Γ : Finset (Formula α)} (A) : LK Δ Γ → LK (A ::ᵢ Δ) Γ
+  | weakR {Δ Γ : Finset (Formula α)} (B) : LK Δ Γ → LK Δ (B ::ᵢ Γ)
+  -- Contraction rules are absorbed by Finset idempotence (A ::ᵢ A ::ᵢ Δ = A ::ᵢ Δ):
+  -- | contrL {Δ Γ : Finset (Formula α)} {A} : LK (A ::ᵢ A ::ᵢ Δ) Γ → LK (A ::ᵢ Δ) Γ
+  -- | contrR {Δ Γ : Finset (Formula α)} {B} : LK Δ (B ::ᵢ B ::ᵢ Γ) → LK Δ (B ::ᵢ Γ)
   | id (A) : LK {A} {A}
-  | cut {Δ Γ Δ' Γ' : Multiset (Formula α)} {B} :
-      LK Δ (B ::ₘ Γ) → LK (B ::ₘ Δ') Γ' → LK (Δ + Δ') (Γ + Γ')
-  | ttL {Δ Γ : Multiset (Formula α)} : LK Δ Γ → LK (tt ::ₘ Δ) Γ
-  | ttR : LK 0 {tt}
-  | ffL : LK {ff} 0
-  | ffR {Δ Γ : Multiset (Formula α)} : LK Δ Γ → LK Δ (ff ::ₘ Γ)
-  | conjL₁ {Δ Γ : Multiset (Formula α)} {A₁} (A₂) : LK (A₁ ::ₘ Δ) Γ → LK (conj A₁ A₂ ::ₘ Δ) Γ
-  | conjL₂ {Δ Γ : Multiset (Formula α)} {A₂} (A₁) : LK (A₂ ::ₘ Δ) Γ → LK (conj A₁ A₂ ::ₘ Δ) Γ
-  | conjR {Δ Γ : Multiset (Formula α)} {B₁ B₂} :
-      LK Δ (B₁ ::ₘ Γ) → LK Δ (B₂ ::ₘ Γ) → LK Δ (conj B₁ B₂ ::ₘ Γ)
-  | disjL {Δ Γ : Multiset (Formula α)} {A₁ A₂} :
-      LK (A₁ ::ₘ Δ) Γ → LK (A₂ ::ₘ Δ) Γ → LK (disj A₁ A₂ ::ₘ Δ) Γ
-  | disjR₁ {Δ Γ : Multiset (Formula α)} {B₁} (B₂) : LK Δ (B₁ ::ₘ Γ) → LK Δ (disj B₁ B₂ ::ₘ Γ)
-  | disjR₂ {Δ Γ : Multiset (Formula α)} {B₂} (B₁) : LK Δ (B₂ ::ₘ Γ) → LK Δ (disj B₁ B₂ ::ₘ Γ)
-  | impL {Δ Γ : Multiset (Formula α)} {A B} : LK Δ (A ::ₘ Γ) → LK (B ::ₘ Δ) Γ → LK (imp A B ::ₘ Δ) Γ
-  | impR {Δ Γ : Multiset (Formula α)} {A B} : LK (A ::ₘ Δ) (B ::ₘ Γ) → LK Δ (imp A B ::ₘ Γ)
+  | cut {Δ Γ Δ' Γ' : Finset (Formula α)} {B} :
+      LK Δ (B ::ᵢ Γ) → LK (B ::ᵢ Δ') Γ' → LK (Δ ∪ Δ') (Γ ∪ Γ')
+  | ttL {Δ Γ : Finset (Formula α)} : LK Δ Γ → LK (tt ::ᵢ Δ) Γ
+  | ttR : LK ∅ {tt}
+  | ffL : LK {ff} ∅
+  | ffR {Δ Γ : Finset (Formula α)} : LK Δ Γ → LK Δ (ff ::ᵢ Γ)
+  | conjL₁ {Δ Γ : Finset (Formula α)} {A₁} (A₂) : LK (A₁ ::ᵢ Δ) Γ → LK (conj A₁ A₂ ::ᵢ Δ) Γ
+  | conjL₂ {Δ Γ : Finset (Formula α)} {A₂} (A₁) : LK (A₂ ::ᵢ Δ) Γ → LK (conj A₁ A₂ ::ᵢ Δ) Γ
+  | conjR {Δ Γ : Finset (Formula α)} {B₁ B₂} :
+      LK Δ (B₁ ::ᵢ Γ) → LK Δ (B₂ ::ᵢ Γ) → LK Δ (conj B₁ B₂ ::ᵢ Γ)
+  | disjL {Δ Γ : Finset (Formula α)} {A₁ A₂} :
+      LK (A₁ ::ᵢ Δ) Γ → LK (A₂ ::ᵢ Δ) Γ → LK (disj A₁ A₂ ::ᵢ Δ) Γ
+  | disjR₁ {Δ Γ : Finset (Formula α)} {B₁} (B₂) : LK Δ (B₁ ::ᵢ Γ) → LK Δ (disj B₁ B₂ ::ᵢ Γ)
+  | disjR₂ {Δ Γ : Finset (Formula α)} {B₂} (B₁) : LK Δ (B₂ ::ᵢ Γ) → LK Δ (disj B₁ B₂ ::ᵢ Γ)
+  | impL {Δ Γ : Finset (Formula α)} {A B} : LK Δ (A ::ᵢ Γ) → LK (B ::ᵢ Δ) Γ → LK (imp A B ::ᵢ Δ) Γ
+  | impR {Δ Γ : Finset (Formula α)} {A B} : LK (A ::ᵢ Δ) (B ::ᵢ Γ) → LK Δ (imp A B ::ᵢ Γ)
 
 end CL
 
@@ -85,32 +89,39 @@ open Formula
 /-- The sequent calculus **LJ** for intuitionistic logic —
 **Paper Section 2.1, Definition 2.7** (PDF page 8).
 `LJ Δ C` means `Δ ⊢ C` is provable, where the right-hand side `C` has at most one formula. -/
-inductive LJ : Multiset (Formula α) → Option (Formula α) → Prop
-  | weakL {Δ : Multiset (Formula α)} {C} (A) : LJ Δ C → LJ (A ::ₘ Δ) C
-  | contrL {Δ : Multiset (Formula α)} {C A} : LJ (A ::ₘ A ::ₘ Δ) C → LJ (A ::ₘ Δ) C
+inductive LJ : Finset (Formula α) → Option (Formula α) → Prop
+  | weakL {Δ : Finset (Formula α)} {C} (A) : LJ Δ C → LJ (A ::ᵢ Δ) C
+  -- Contraction rule is absorbed by Finset idempotence (A ::ᵢ A ::ᵢ Δ = A ::ᵢ Δ):
+  -- | contrL {Δ : Finset (Formula α)} {C A} : LJ (A ::ᵢ A ::ᵢ Δ) C → LJ (A ::ᵢ Δ) C
   /-- right weakening `Δ ⊢` / `Δ ⊢ B` (the intuitionistic instance of LK's `WR`) -/
-  | weakR {Δ : Multiset (Formula α)} (B) : LJ Δ none → LJ Δ (some B)
+  | weakR {Δ : Finset (Formula α)} (B) : LJ Δ none → LJ Δ (some B)
   | id (A) : LJ {A} (some A)
-  | cut {Δ Δ' : Multiset (Formula α)} {C B} : LJ Δ (some B) → LJ (B ::ₘ Δ') C → LJ (Δ + Δ') C
-  | topL {Δ : Multiset (Formula α)} {C} : LJ Δ C → LJ (top ::ₘ Δ) C
-  | topR : LJ 0 (some top)
+  | cut {Δ Δ' : Finset (Formula α)} {C B} : LJ Δ (some B) → LJ (B ::ᵢ Δ') C → LJ (Δ ∪ Δ') C
+  | topL {Δ : Finset (Formula α)} {C} : LJ Δ C → LJ (top ::ᵢ Δ) C
+  | topR : LJ ∅ (some top)
   | ffL : LJ {ff} none
-  | ffR {Δ : Multiset (Formula α)} : LJ Δ none → LJ Δ (some ff)
-  | withL₁ {Δ : Multiset (Formula α)} {C A₁} (A₂) : LJ (A₁ ::ₘ Δ) C → LJ («with» A₁ A₂ ::ₘ Δ) C
-  | withL₂ {Δ : Multiset (Formula α)} {C A₂} (A₁) : LJ (A₂ ::ₘ Δ) C → LJ («with» A₁ A₂ ::ₘ Δ) C
-  | withR {Δ : Multiset (Formula α)} {B₁ B₂} :
+  | ffR {Δ : Finset (Formula α)} : LJ Δ none → LJ Δ (some ff)
+  | withL₁ {Δ : Finset (Formula α)} {C A₁} (A₂) : LJ (A₁ ::ᵢ Δ) C → LJ («with» A₁ A₂ ::ᵢ Δ) C
+  | withL₂ {Δ : Finset (Formula α)} {C A₂} (A₁) : LJ (A₂ ::ᵢ Δ) C → LJ («with» A₁ A₂ ::ᵢ Δ) C
+  | withR {Δ : Finset (Formula α)} {B₁ B₂} :
       LJ Δ (some B₁) → LJ Δ (some B₂) → LJ Δ (some («with» B₁ B₂))
-  | disjL {Δ : Multiset (Formula α)} {C A₁ A₂} :
-      LJ (A₁ ::ₘ Δ) C → LJ (A₂ ::ₘ Δ) C → LJ (disj A₁ A₂ ::ₘ Δ) C
-  | disjR₁ {Δ : Multiset (Formula α)} {B₁} (B₂) : LJ Δ (some B₁) → LJ Δ (some (disj B₁ B₂))
-  | disjR₂ {Δ : Multiset (Formula α)} {B₂} (B₁) : LJ Δ (some B₂) → LJ Δ (some (disj B₁ B₂))
-  | impL {Δ : Multiset (Formula α)} {C A B} : LJ Δ (some A) → LJ (B ::ₘ Δ) C → LJ (imp A B ::ₘ Δ) C
-  | impR {Δ : Multiset (Formula α)} {A B} : LJ (A ::ₘ Δ) (some B) → LJ Δ (some (imp A B))
+  | disjL {Δ : Finset (Formula α)} {C A₁ A₂} :
+      LJ (A₁ ::ᵢ Δ) C → LJ (A₂ ::ᵢ Δ) C → LJ (disj A₁ A₂ ::ᵢ Δ) C
+  | disjR₁ {Δ : Finset (Formula α)} {B₁} (B₂) : LJ Δ (some B₁) → LJ Δ (some (disj B₁ B₂))
+  | disjR₂ {Δ : Finset (Formula α)} {B₂} (B₁) : LJ Δ (some B₂) → LJ Δ (some (disj B₁ B₂))
+  | impL {Δ : Finset (Formula α)} {C A B} : LJ Δ (some A) → LJ (B ::ᵢ Δ) C → LJ (imp A B ::ᵢ Δ) C
+  | impR {Δ : Finset (Formula α)} {A B} : LJ (A ::ᵢ Δ) (some B) → LJ Δ (some (imp A B))
 
-/-- General Modus Ponens rule: If `Δ ⊢ A ⇒ B`, then `Δ + {A} ⊢ B`. -/
-theorem modus_ponens {Δ : Multiset (Formula α)} {A B : Formula α} (h : LJ Δ (some (imp A B))) :
-    LJ (Δ + {A}) (some B) :=
-  LJ.cut h (LJ.impL (LJ.id A) ((Multiset.cons_swap B A 0).symm ▸ LJ.weakL A (LJ.id B)))
+/-- General Modus Ponens rule: If `Δ ⊢ A ⇒ B`, then `Δ ∪ {A} ⊢ B`. -/
+theorem modus_ponens {Δ : Finset (Formula α)} {A B : Formula α} (h : LJ Δ (some (imp A B))) :
+    LJ (Δ ∪ {A}) (some B) := by
+  have h1 : LJ (B ::ᵢ {A}) (some B) := by
+    have h2 : (B ::ᵢ {A} : Finset (Formula α)) = A ::ᵢ {B} := by
+      ext x; simp [or_comm]
+    rw [h2]
+    exact LJ.weakL A (LJ.id B)
+  have h2 := LJ.impL (LJ.id A) h1
+  exact LJ.cut h h2
 
 end IL
 

@@ -205,4 +205,17 @@ lemma optMs_map {β γ : Type u} (f : β → γ) (o : Option β) :
     (optMs o).map f = optMs (o.map f) := by
   cases o <;> simp [optMs]
 
+/-- Turn an optional formula (the right-hand side of an intuitionistic sequent) into a
+finset with at most one element. -/
+def optFinset {β : Type u} : Option β → Finset β
+  | none => ∅
+  | some b => {b}
+
+@[simp] lemma optFinset_none {β : Type u} : optFinset (none : Option β) = ∅ := rfl
+@[simp] lemma optFinset_some {β : Type u} (b : β) : optFinset (some b) = {b} := rfl
+
+lemma optFinset_map {β γ : Type u} [DecidableEq γ] (f : β → γ) (o : Option β) :
+    (optFinset o).image f = optFinset (o.map f) := by
+  cases o <;> simp [optFinset]
+
 end

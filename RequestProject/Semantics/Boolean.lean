@@ -23,7 +23,7 @@ public import RequestProject.Semantics.Polycategory
 
 universe u v
 
-variable {α : Type u}
+variable {α : Type u} [DecidableEq α]
 
 namespace CL
 
@@ -41,8 +41,8 @@ def Formula.eval {B : Type v} [BooleanAlgebra B] (v : α → B) : Formula α →
 
 /-- A sequent `Δ ⊢ Γ` is **valid** in the Boolean algebra `B` under the valuation `v` if
 `⋀ ⟦Δ⟧ ≤ ⋁ ⟦Γ⟧`. -/
-def Valid {B : Type v} [BooleanAlgebra B] (v : α → B) (Δ Γ : Multiset (Formula α)) : Prop :=
-  (Δ.map (Formula.eval v)).inf ≤ (Γ.map (Formula.eval v)).sup
+def Valid {B : Type v} [BooleanAlgebra B] (v : α → B) (Δ Γ : Finset (Formula α)) : Prop :=
+  (Δ.inf (Formula.eval v)) ≤ (Γ.sup (Formula.eval v))
 
 section BooleanLemmas
 
@@ -64,138 +64,145 @@ private lemma boolean_impR {a b d g : B} (h : a ⊓ d ≤ b ⊔ g) : d ≤ (a �
 end BooleanLemmas
 
 /-- **Soundness of LK for Boolean algebras.** -/
-theorem LK.sound {B : Type v} [BooleanAlgebra B] (v : α → B) {Δ Γ : Multiset (Formula α)}
+theorem LK.sound {B : Type v} [BooleanAlgebra B] (v : α → B) {Δ Γ : Finset (Formula α)}
     (h : LK Δ Γ) : Valid v Δ Γ := by
   unfold Valid
   induction h with
-  | weakL A _ ih => simpa using inf_le_of_right_le ih
-  | weakR B _ ih => simpa using le_sup_of_le_right ih
-  | contrL _ ih => simpa using ih
-  | contrR _ ih => simpa using ih
+  | weakL A _ ih =>
+    exact le_trans (Finset.inf_mono (Finset.subset_insert _ _)) ih
+  | weakR B _ ih =>
+    exact le_trans ih (Finset.sup_mono (Finset.subset_insert _ _))
+  -- contrL/contrR are absorbed by Finset: insert A (insert A Δ) = insert A Δ
   | id A => simp
   | cut _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.map_add, Multiset.inf_cons, Multiset.sup_cons,
-      Multiset.inf_add, Multiset.sup_add] at *
     rename_i Δ Γ Δ' Γ' C _ _
-    calc (Δ.map (eval v)).inf ⊓ (Δ'.map (eval v)).inf
-        ≤ (C.eval v ⊔ (Γ.map (eval v)).sup) ⊓ (Δ'.map (eval v)).inf := inf_le_inf_right _ ih₁
-      _ = (C.eval v ⊓ (Δ'.map (eval v)).inf) ⊔ ((Γ.map (eval v)).sup ⊓ (Δ'.map (eval v)).inf) :=
+    simp only [Finset.inf_union, Finset.sup_union, Finset.inf_insert, Finset.sup_insert] at *
+    calc Δ.inf (eval v) ⊓ Δ'.inf (eval v)
+        ≤ (C.eval v ⊔ Γ.sup (eval v)) ⊓ Δ'.inf (eval v) := inf_le_inf_right _ ih₁
+      _ = (C.eval v ⊓ Δ'.inf (eval v)) ⊔ (Γ.sup (eval v) ⊓ Δ'.inf (eval v)) :=
           inf_sup_right _ _ _
-      _ ≤ _ := sup_le (ih₂.trans le_sup_right) (inf_le_left.trans le_sup_left)
-  | ttL _ ih => simpa [eval] using ih
-  | ttR => simp [eval]
-  | ffL => simp [eval]
-  | ffR _ ih => simpa [eval] using ih
+      _ ≤ Γ.sup (eval v) ⊔ Γ'.sup (eval v) := by
+          apply sup_le
+          · exact le_trans ih₂ le_sup_right
+          · exact le_trans inf_le_left le_sup_left
+  | ttL _ ih =>
+    exact le_trans (Finset.inf_mono (Finset.subset_insert _ _)) ih
+  | ttR => simp [Formula.eval]
+  | ffL => simp [Formula.eval]
+  | ffR _ ih =>
+    exact le_trans ih (Finset.sup_mono (Finset.subset_insert _ _))
   | conjL₁ A₂ _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval] at *
+    simp only [Finset.inf_insert, eval] at *
     exact le_trans (inf_le_inf_right _ inf_le_left) ih
   | conjL₂ A₁ _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval] at *
+    simp only [Finset.inf_insert, eval] at *
     exact le_trans (inf_le_inf_right _ inf_le_right) ih
   | conjR _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.sup_cons, eval] at *
-    exact (le_inf ih₁ ih₂).trans (sup_inf_right _ _ _).ge
+    simp only [Finset.sup_insert, eval] at *
+    rw [sup_inf_right]
+    exact le_inf ih₁ ih₂
   | disjL _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, eval] at *
+    simp only [Finset.inf_insert, eval] at *
     rw [inf_sup_right]
     exact sup_le ih₁ ih₂
   | disjR₁ B₂ _ ih =>
-    simp only [Multiset.map_cons, Multiset.sup_cons, eval] at *
-    exact ih.trans (sup_le_sup_right le_sup_left _)
+    simp only [Finset.sup_insert, eval] at *
+    exact le_trans ih (sup_le_sup_right le_sup_left _)
   | disjR₂ B₁ _ ih =>
-    simp only [Multiset.map_cons, Multiset.sup_cons, eval] at *
-    exact ih.trans (sup_le_sup_right le_sup_right _)
+    simp only [Finset.sup_insert, eval] at *
+    exact le_trans ih (sup_le_sup_right le_sup_right _)
   | impL _ _ ih₁ ih₂ =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, Multiset.sup_cons, eval] at *
+    simp only [Finset.inf_insert, Finset.sup_insert, eval] at *
     exact boolean_impL ih₁ ih₂
   | impR _ ih =>
-    simp only [Multiset.map_cons, Multiset.inf_cons, Multiset.sup_cons, eval] at *
+    simp only [Finset.inf_insert, Finset.sup_insert, eval] at *
     exact boolean_impR ih
 
 /-! ## Derived rules of LK used for the Lindenbaum algebra -/
 
 namespace LK
 
-lemma swap2 (a b : Formula α) : a ::ₘ ({b} : Multiset (Formula α)) = b ::ₘ {a} :=
-  Multiset.cons_swap a b 0
-
-lemma cast' {Δ Γ Δ' Γ' : Multiset (Formula α)} (h : LK Δ Γ) (h₁ : Δ = Δ') (h₂ : Γ = Γ') :
+lemma cast' {Δ Γ Δ' Γ' : Finset (Formula α)} (h : LK Δ Γ) (h₁ : Δ = Δ') (h₂ : Γ = Γ') :
     LK Δ' Γ' := h₁ ▸ h₂ ▸ h
 
 lemma trans' {A B C : Formula α} (h₁ : LK {A} {B}) (h₂ : LK {B} {C}) : LK {A} {C} :=
-  (cut (Γ := 0) (Δ' := 0) h₁ h₂).cast' (by simp) (by simp)
+  (cut (Γ := ∅) (Δ' := ∅) h₁ h₂).cast' (by simp) (by simp)
 
-lemma conj_le_left (A B : Formula α) : LK {conj A B} {A} := conjL₁ (Δ := 0) B (id A)
-lemma conj_le_right (A B : Formula α) : LK {conj A B} {B} := conjL₂ (Δ := 0) A (id B)
+lemma conj_le_left (A B : Formula α) : LK {conj A B} {A} := conjL₁ (Δ := ∅) B (id A)
+lemma conj_le_right (A B : Formula α) : LK {conj A B} {B} := conjL₂ (Δ := ∅) A (id B)
 lemma le_conj {A B C : Formula α} (h₁ : LK {C} {A}) (h₂ : LK {C} {B}) : LK {C} {conj A B} :=
-  conjR (Γ := 0) h₁ h₂
-lemma le_disj_left (A B : Formula α) : LK {A} {disj A B} := disjR₁ (Γ := 0) B (id A)
-lemma le_disj_right (A B : Formula α) : LK {B} {disj A B} := disjR₂ (Γ := 0) A (id B)
+  conjR (Γ := ∅) h₁ h₂
+lemma le_disj_left (A B : Formula α) : LK {A} {disj A B} := disjR₁ (Γ := ∅) B (id A)
+lemma le_disj_right (A B : Formula α) : LK {B} {disj A B} := disjR₂ (Γ := ∅) A (id B)
 lemma disj_le {A B C : Formula α} (h₁ : LK {A} {C}) (h₂ : LK {B} {C}) : LK {disj A B} {C} :=
-  disjL (Δ := 0) h₁ h₂
-lemma le_tt (A : Formula α) : LK {A} {tt} := weakL (Δ := 0) A ttR
-lemma ff_le (A : Formula α) : LK {ff} {A} := weakR (Γ := 0) A ffL
+  disjL (Δ := ∅) h₁ h₂
+lemma le_tt (A : Formula α) : LK {A} {tt} := weakL (Δ := ∅) A ttR
+lemma ff_le (A : Formula α) : LK {ff} {A} := weakR (Γ := ∅) A ffL
 
 /-- `A, ∼A ⊢` -/
-lemma neg_left (A : Formula α) : LK (A ::ₘ {Formula.neg A}) 0 :=
-  (impL (Δ := {A}) (Γ := 0) (A := A) (B := ff) (id A) ((weakL A ffL).cast' (swap2 _ _) rfl)).cast' (swap2 _ _) rfl
+lemma neg_left (A : Formula α) : LK {A, Formula.neg A} ∅ :=
+  (impL (Δ := {A}) (Γ := ∅) (A := A) (B := ff) (id A) ((weakL A ffL).cast' (Finset.pair_comm _ _) rfl)).cast'
+    (Finset.pair_comm _ _) rfl
 
 /-- `⊢ A, ∼A` -/
-lemma neg_right (A : Formula α) : LK 0 (A ::ₘ {Formula.neg A}) :=
-  (impR (Δ := 0) (Γ := {A}) (A := A) (B := ff) (ffR (id A))).cast' rfl
-    (swap2 _ _)
+lemma neg_right (A : Formula α) : LK ∅ {A, Formula.neg A} :=
+  (impR (Δ := ∅) (Γ := {A}) (A := A) (B := ff) (ffR (id A))).cast' rfl
+    (Finset.pair_comm _ _)
 
 lemma conj_neg_le (A : Formula α) : LK {conj A (Formula.neg A)} {ff} := by
   have h1 := conjL₁ (Δ := {Formula.neg A}) (Formula.neg A) (weakR ff (neg_left A))
   have h2 := conjL₂ (Δ := {conj A (Formula.neg A)}) A
-    (h1.cast' (swap2 _ _) rfl)
-  exact contrL h2
+    (h1.cast' (Finset.pair_comm _ _) rfl)
+  exact h2.cast' (Finset.insert_eq_of_mem (Finset.mem_singleton_self _)) rfl
 
 lemma tt_le_disj_neg (A : Formula α) : LK {tt} {disj A (Formula.neg A)} := by
   have h1 := disjR₁ (Γ := {Formula.neg A}) (Formula.neg A) (neg_right A)
   have h2 := disjR₂ (Γ := {disj A (Formula.neg A)}) A
-    (h1.cast' rfl (swap2 _ _))
-  exact ttL (contrR h2)
+    (h1.cast' rfl (Finset.pair_comm _ _))
+  have h3 : LK ∅ {disj A (Formula.neg A)} :=
+    h2.cast' rfl (Finset.insert_eq_of_mem (Finset.mem_singleton_self _))
+  exact ttL h3
 
 lemma distrib (x y z : Formula α) :
     LK {conj (disj x y) (disj x z)} {disj x (conj y z)} := by
   set P := conj (disj x y) (disj x z)
   set R := disj x (conj y z)
   have hx : LK {x} {R} := le_disj_left _ _
-  have s1 : LK (x ::ₘ {P}) {R} := (weakL P hx).cast' (swap2 _ _) rfl
-  have s2 : LK (y ::ₘ {z}) {R} := by
-    have a : LK (y ::ₘ {z}) {y} := (weakL z (id y)).cast' (swap2 _ _) rfl
-    have b : LK (y ::ₘ {z}) {z} := weakL y (id z)
-    exact disjR₂ (Γ := 0) x (conjR (Γ := 0) a b)
-  have s3 : LK (y ::ₘ {x}) {R} := weakL y hx
-  have s4 : LK (disj x z ::ₘ {y}) {R} :=
-    disjL (s3.cast' (swap2 _ _) rfl) (s2.cast' (swap2 _ _) rfl)
-  have s5 : LK (y ::ₘ {P}) {R} :=
-    (conjL₂ (disj x y) s4).cast' (swap2 _ _) rfl
-  have s6 : LK (disj x y ::ₘ {P}) {R} := disjL s1 s5
-  exact contrL (conjL₁ (disj x z) s6)
+  have s1 : LK (x ::ᵢ {P}) {R} := (weakL P hx).cast' (Finset.pair_comm _ _) rfl
+  have s2 : LK (y ::ᵢ {z}) {R} := by
+    have a : LK (y ::ᵢ {z}) {y} := (weakL z (id y)).cast' (Finset.pair_comm _ _) rfl
+    have b : LK (y ::ᵢ {z}) {z} := weakL y (id z)
+    exact disjR₂ (Γ := ∅) x (conjR (Γ := ∅) a b)
+  have s3 : LK (y ::ᵢ {x}) {R} := weakL y hx
+  have s4 : LK (disj x z ::ᵢ {y}) {R} :=
+    disjL (s3.cast' (Finset.pair_comm _ _) rfl) (s2.cast' (Finset.pair_comm _ _) rfl)
+  have s5 : LK (y ::ᵢ {P}) {R} :=
+    (conjL₂ (disj x y) s4).cast' (Finset.pair_comm _ _) rfl
+  have s6 : LK (disj x y ::ᵢ {P}) {R} := disjL s1 s5
+  have s7 := conjL₁ (disj x z) s6
+  exact s7.cast' (Finset.insert_eq_of_mem (Finset.mem_singleton_self _)) rfl
 
 lemma imp_le (a b : Formula α) : LK {imp a b} {disj b (Formula.neg a)} := by
-  have h1 : LK 0 (a ::ₘ {disj b (Formula.neg a)}) :=
-    (disjR₂ (Γ := {a}) b ((neg_right a).cast' rfl (swap2 _ _))).cast' rfl
-      (swap2 _ _)
-  exact impL (Δ := 0) h1 (le_disj_left _ _)
+  have h1 : LK ∅ (a ::ᵢ {disj b (Formula.neg a)}) :=
+    (disjR₂ (Γ := {a}) b ((neg_right a).cast' rfl (Finset.pair_comm _ _))).cast' rfl
+      (Finset.pair_comm _ _)
+  exact impL (Δ := ∅) h1 (le_disj_left _ _)
 
 lemma le_imp (a b : Formula α) : LK {disj b (Formula.neg a)} {imp a b} :=
-  disj_le (impR (Δ := {b}) (Γ := 0) (weakL a (id b)))
-    (impR (Δ := {Formula.neg a}) (Γ := 0) (weakR b (neg_left a)))
+  disj_le (impR (Δ := {b}) (Γ := ∅) (weakL a (id b)))
+    (impR (Δ := {Formula.neg a}) (Γ := ∅) (weakR b (neg_left a)))
 
 lemma neg_anti {a a' : Formula α} (h : LK {a'} {a}) :
     LK {Formula.neg a} {Formula.neg a'} :=
-  impR (Δ := {Formula.neg a}) (Γ := 0)
-    ((cut (Δ := {a'}) (Γ := 0) h (weakR ff (neg_left a))).cast' (by simp) (by simp))
+  impR (Δ := {Formula.neg a}) (Γ := ∅)
+    ((cut (Δ := {a'}) (Γ := ∅) h (weakR ff (neg_left a))).cast' (by simp) (by simp))
 
 lemma imp_mono {a a' b b' : Formula α} (ha : LK {a'} {a}) (hb : LK {b} {b'}) :
     LK {imp a b} {imp a' b'} := by
-  have h1 : LK {a'} (a ::ₘ {b'}) := (weakR b' ha).cast' rfl (swap2 _ _)
-  have h2 : LK (b ::ₘ {a'}) {b'} := (weakL a' hb).cast' (swap2 _ _) rfl
-  exact impR (Δ := {imp a b}) (Γ := 0)
-    ((impL (Δ := {a'}) (Γ := {b'}) h1 h2).cast' (swap2 _ _) rfl)
+  have h1 : LK {a'} (a ::ᵢ {b'}) := (weakR b' ha).cast' rfl (Finset.pair_comm _ _)
+  have h2 : LK (b ::ᵢ {a'}) {b'} := (weakL a' hb).cast' (Finset.pair_comm _ _) rfl
+  exact impR (Δ := {imp a b}) (Γ := ∅)
+    ((impL (Δ := {a'}) (Γ := {b'}) h1 h2).cast' (Finset.pair_comm _ _) rfl)
 
 lemma conj_mono {a a' b b' : Formula α} (ha : LK {a} {a'}) (hb : LK {b} {b'}) :
     LK {conj a b} {conj a' b'} :=
@@ -210,7 +217,7 @@ end LK
 /-! ## The Lindenbaum–Tarski algebra of CL -/
 
 /-- Formulas of CL preordered by provability: `A ≤ B` iff `A ⊢ B` is provable in **LK**. -/
-def LPre (α : Type u) : Type u := Formula α
+def LPre (α : Type u) [DecidableEq α] : Type u := Formula α
 
 instance : Preorder (LPre α) where
   le A B := LK {A} {B}
@@ -220,7 +227,7 @@ instance : Preorder (LPre α) where
 /-- The **Lindenbaum–Tarski algebra** of classical logic: formulas modulo provable
 equivalence (`A ~ B` iff `A ⊢ B` and `B ⊢ A` are provable in **LK**), ordered by
 provability. -/
-def Lindenbaum (α : Type u) : Type u := Antisymmetrization (LPre α) (· ≤ ·)
+def Lindenbaum (α : Type u) [DecidableEq α] : Type u := Antisymmetrization (LPre α) (· ≤ ·)
 
 namespace Lindenbaum
 
@@ -312,59 +319,61 @@ lemma eval_mk (A : Formula α) : A.eval (fun x => mk (var x)) = mk A := by
   | disj A B ihA ihB => simp only [eval, ihA, ihB]; rfl
   | imp A B ihA ihB => simp only [eval, ihA, ihB]; rfl
 
-lemma le_sup_imp_LK (Γ : Multiset (Formula α)) :
-    ∀ C : Formula α, mk C ≤ (Γ.map mk).sup → LK {C} Γ := by
-  induction Γ using Multiset.induction_on with
+lemma le_sup_imp_LK (Γ : Finset (Formula α)) :
+    ∀ C : Formula α, mk C ≤ Γ.sup mk → LK {C} Γ := by
+  induction Γ using Finset.induction_on with
   | empty =>
     intro C h
     have h' : LK {C} {ff} := mk_le_mk.1 (by simpa using h)
-    exact (LK.cut (Δ := {C}) (Γ := 0) (Δ' := 0) (Γ' := 0) h' LK.ffL).cast' (by simp) (by simp)
-  | cons B Γ ih =>
+    exact (LK.cut (Δ := {C}) (Γ := ∅) (Δ' := ∅) (Γ' := ∅) h' LK.ffL).cast' (by simp) (by simp)
+  | @insert B Γ hB ih =>
     intro C h
-    simp only [Multiset.map_cons, Multiset.sup_cons] at h
-    have h2 : mk (conj C (Formula.neg B)) ≤ (Γ.map mk).sup := by
+    simp only [Finset.sup_insert] at h
+    have h2 : mk (conj C (Formula.neg B)) ≤ Γ.sup mk := by
       rw [← mk_inf, ← mk_compl, ← sdiff_eq]; exact sdiff_le_iff.2 h
     have h3 := ih _ h2
-    have h1 : LK {C} (conj C (Formula.neg B) ::ₘ {B}) := by
-      refine LK.conjR (Γ := {B}) ((LK.weakR B (LK.id C)).cast' rfl
-        (LK.swap2 _ _)) ?_
-      exact LK.impR (Δ := {C}) (Γ := {B}) (LK.ffR ((LK.weakL C (LK.id B)).cast'
-        (LK.swap2 _ _) rfl))
-    exact (LK.cut (Δ' := 0) h1 h3).cast' (by simp) (by simp)
+    have h1 : LK {C} (conj C (Formula.neg B) ::ᵢ {B}) := by
+      refine LK.conjR (Γ := {B}) ((LK.weakR B (LK.id C)).cast' rfl (Finset.pair_comm _ _)) ?_
+      exact LK.impR (Δ := {C}) (Γ := {B}) (LK.ffR ((LK.weakL C (LK.id B)).cast' (Finset.pair_comm _ _) rfl))
+    have hcut := LK.cut (Δ' := ∅) h1 h3
+    exact hcut.cast' (by simp) (by ext x; simp)
 
-lemma inf_le_sup_imp_LK (Δ : Multiset (Formula α)) :
-    ∀ Γ : Multiset (Formula α), (Δ.map mk).inf ≤ (Γ.map mk).sup → LK Δ Γ := by
-  induction Δ using Multiset.induction_on with
+lemma inf_le_sup_imp_LK (Δ : Finset (Formula α)) :
+    ∀ Γ : Finset (Formula α), Δ.inf mk ≤ Γ.sup mk → LK Δ Γ := by
+  induction Δ using Finset.induction_on with
   | empty =>
     intro Γ h
     have h' := le_sup_imp_LK Γ tt (by simpa using h)
-    exact (LK.cut (Δ := 0) (Γ := 0) LK.ttR h').cast' (by simp) (by simp)
-  | cons A Δ ih =>
+    exact (LK.cut (Δ' := ∅) (Γ := ∅) LK.ttR h').cast' (by simp) (by simp)
+  | @insert A Δ hA ih =>
     intro Γ h
-    simp only [Multiset.map_cons, Multiset.inf_cons] at h
-    have h2 : (Δ.map mk).inf ≤ ((Formula.neg A ::ₘ Γ).map mk).sup := by
-      simp only [Multiset.map_cons, Multiset.sup_cons, ← mk_compl]
-      calc (Δ.map mk).inf ≤ (mk A)ᶜ ⊔ (mk A ⊓ (Δ.map mk).inf) := by
+    simp only [Finset.inf_insert] at h
+    have h2 : Δ.inf mk ≤ (insert (Formula.neg A) Γ).sup mk := by
+      simp only [Finset.sup_insert, ← mk_compl]
+      calc Δ.inf mk ≤ (mk A)ᶜ ⊔ (mk A ⊓ Δ.inf mk) := by
             rw [sup_inf_left, compl_sup_eq_top, top_inf_eq]; exact le_sup_right
-        _ ≤ (mk A)ᶜ ⊔ (Γ.map mk).sup := sup_le_sup_left h _
+        _ ≤ (mk A)ᶜ ⊔ Γ.sup mk := sup_le_sup_left h _
     have h3 := ih _ h2
-    exact (LK.cut (Δ' := {A}) (Γ' := 0) h3 ((LK.neg_left A).cast'
-      (LK.swap2 _ _) rfl)).cast' (by rw [add_comm]; rfl) (by simp)
+    have hneg : LK (Formula.neg A ::ᵢ {A}) ∅ := (LK.neg_left A).cast' (Finset.pair_comm _ _) rfl
+    have hcut := LK.cut (Δ' := {A}) (Γ' := ∅) h3 hneg
+    exact hcut.cast' (by ext x; simp) (by simp)
 
 end Lindenbaum
 
 /-- **Completeness of LK for Boolean algebras**: a sequent that is valid in every Boolean
 algebra under every valuation is provable. (It suffices to quantify over Boolean algebras in
 the same universe as the variables: the Lindenbaum–Tarski algebra is one of them.) -/
-theorem LK.complete {Δ Γ : Multiset (Formula α)}
+theorem LK.complete {Δ Γ : Finset (Formula α)}
     (h : ∀ (B : Type u) [BooleanAlgebra B] (v : α → B), Valid v Δ Γ) : LK Δ Γ := by
-  have := h (Lindenbaum α) (fun x => Lindenbaum.mk (var x))
-  simp only [Valid, Lindenbaum.eval_mk] at this
-  exact Lindenbaum.inf_le_sup_imp_LK Δ Γ (by simpa [Function.comp_def, Lindenbaum.eval_mk] using this)
+  have := h (Lindenbaum α) (fun (x : α) => Lindenbaum.mk (var x))
+  have h_eval : Formula.eval (fun (x : α) => Lindenbaum.mk (var x)) = Lindenbaum.mk := funext Lindenbaum.eval_mk
+  unfold Valid at this
+  rw [h_eval] at this
+  exact Lindenbaum.inf_le_sup_imp_LK Δ Γ this
 
 /-- **Boolean algebras are the algebraic models of classical logic**: a sequent is provable
 in **LK** iff it is valid in every Boolean algebra under every valuation. -/
-theorem LK.iff_valid {Δ Γ : Multiset (Formula α)} :
+theorem LK.iff_valid {Δ Γ : Finset (Formula α)} :
     LK Δ Γ ↔ ∀ (B : Type u) [BooleanAlgebra B] (v : α → B), Valid v Δ Γ :=
   ⟨fun h _ _ v => h.sound v, LK.complete⟩
 
@@ -372,17 +381,20 @@ theorem LK.iff_valid {Δ Γ : Multiset (Formula α)} :
 
 /-- Provability in **LK** forms a (thin) polycategory, whose colours are the formulas of CL:
 identities are the identity axioms and composition is the cut rule. -/
-def LK.polycategory (α : Type u) : ThinPolycategory (Formula α) where
+def LK.polycategory (α : Type u) [DecidableEq α] : ThinPolycategory (Formula α) where
   Hom := LK
   id := LK.id
   comp := LK.cut
 
 /-- **Soundness, categorically**: evaluation in a Boolean algebra `B` is a polyfunctor from
 the polycategory of **LK**-provability to the polycategory of `B`. -/
-def evalPolyfunctor {B : Type v} [BooleanAlgebra B] (v : α → B) :
+def evalPolyfunctor {B : Type v} [DecidableEq B] [BooleanAlgebra B] (v : α → B) :
     ThinPolycategory.Functor (LK.polycategory α) (DistribLattice.toThinPolycategory B) where
   obj := Formula.eval v
-  map h := h.sound v
+  map {Γ Δ} h := by
+    have hs := h.sound v
+    unfold Valid at hs
+    simpa [DistribLattice.toThinPolycategory, Finset.inf_image, Finset.sup_image] using hs
 
 end CL
 

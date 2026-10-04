@@ -189,7 +189,7 @@ end Exponential
 
 /-- A Girard quantale is a (thin) polycategory: `Γ → Δ` iff `∏ Γ ≤ ⅋ Δ`, i.e.
 `∏ Γ * ∏ Δ⊥ ≤ d`. -/
-def toThinPolycategory (Q : Type u) [GirardQuantale Q] : ThinPolycategory Q where
+def toThinPolycategory (Q : Type u) [GirardQuantale Q] : ThinMultisetPolycategory Q where
   Hom Γ Δ := Γ.prod * (Δ.map lneg).prod ≤ dualizing
   id A := by simpa using mul_lneg_le A
   comp {Γ Δ Γ' Δ' A} f g := by
@@ -436,7 +436,7 @@ theorem ILC.sound_girardQuantale (v : α → Q) {Δ Γ : Multiset (Formula α)}
   | wnBangR hι => exact absurd hι (by decide)
 
 /-- Provability in **ILC** / **ILC_ι** forms a (thin) polycategory. -/
-def ILC.polycategory (ι : Bool) (α : Type u) : ThinPolycategory (Formula α) where
+def ILC.polycategory (ι : Bool) (α : Type u) : ThinMultisetPolycategory (Formula α) where
   Hom := ILC ι
   id := ILC.id
   comp := ILC.cut
@@ -444,7 +444,7 @@ def ILC.polycategory (ι : Bool) (α : Type u) : ThinPolycategory (Formula α) w
 /-- **Soundness, categorically**: evaluation in a Girard quantale is a polyfunctor from the
 polycategory of **ILC**-provability to the polycategory of the quantale. -/
 def ILC.evalPolyfunctor (v : α → Q) :
-    ThinPolycategory.Functor (ILC.polycategory false α) (GirardQuantale.toThinPolycategory Q) where
+    ThinMultisetPolycategory.Functor (ILC.polycategory false α) (GirardQuantale.toThinPolycategory Q) where
   obj := Formula.qeval v
   map h := by
     have := ILC.sound_girardQuantale v h
