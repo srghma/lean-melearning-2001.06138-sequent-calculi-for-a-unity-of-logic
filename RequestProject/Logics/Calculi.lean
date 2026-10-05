@@ -331,43 +331,43 @@ open Formula
 
 /-- The sequent calculus **INC** for intuitionistic logic extended ILᵉ —
 **Paper Section 3.2, Definition 3.12, Figure 4** (PDF pages 20–21). -/
-inductive INC : Multiset (Formula α) → Multiset (Formula α) → Prop
-  | weakL {Δ Γ : Multiset (Formula α)} (A) : INC Δ Γ → INC (A ::ₘ Δ) Γ
-  | wnW {Δ Γ : Multiset (Formula α)} (B) : INC Δ Γ → INC Δ (wn B ::ₘ Γ)
-  | contrL {Δ Γ : Multiset (Formula α)} {A} : INC (A ::ₘ A ::ₘ Δ) Γ → INC (A ::ₘ Δ) Γ
-  | wnC {Δ Γ : Multiset (Formula α)} {B} : INC Δ (wn B ::ₘ wn B ::ₘ Γ) → INC Δ (wn B ::ₘ Γ)
-  | wnD {Δ Γ : Multiset (Formula α)} {B} : INC Δ (B ::ₘ Γ) → INC Δ (wn B ::ₘ Γ)
+inductive INC : Finset (Formula α) → Multiset (Formula α) → Prop
+  | weakL {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} (A) : INC Δ Γ → INC (A ::ᵢ Δ) Γ
+  | wnW {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} (B) : INC Δ Γ → INC Δ (wn B ::ₘ Γ)
+  -- | contrL {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A} : INC (A ::ₘ A ::ₘ Δ) Γ → INC (A ::ₘ Δ) Γ
+  | wnC {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {B} : INC Δ (wn B ::ₘ wn B ::ₘ Γ) → INC Δ (wn B ::ₘ Γ)
+  | wnD {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {B} : INC Δ (B ::ₘ Γ) → INC Δ (wn B ::ₘ Γ)
   /-- `?L^?`: `Δ, A ⊢ ?Γ` / `Δ, ?A ⊢ ?Γ` -/
-  | wnL {Δ Γ : Multiset (Formula α)} {A} : INC (A ::ₘ Δ) (Γ.map wn) → INC (wn A ::ₘ Δ) (Γ.map wn)
+  | wnL {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A} : INC (A ::ᵢ Δ) (Γ.map wn) → INC (wn A ::ᵢ Δ) (Γ.map wn)
   | id (A) : INC {A} {A}
   /-- `Cut^?`: `Δ ⊢ ?B, ?Γ`, `Δ', B ⊢ ?Γ'` / `Δ, Δ' ⊢ ?Γ, ?Γ'` -/
-  | cut {Δ Γ Δ' Γ' : Multiset (Formula α)} {B} :
-      INC Δ (wn B ::ₘ Γ.map wn) → INC (B ::ₘ Δ') (Γ'.map wn) →
-      INC (Δ + Δ') (Γ.map wn + Γ'.map wn)
-  | topL {Δ Γ : Multiset (Formula α)} : INC Δ Γ → INC (top ::ₘ Δ) Γ
-  | topR : INC 0 {top}
+  | cut {Δ Δ' : Finset (Formula α)} {Γ Γ' : Multiset (Formula α)} {B} :
+      INC Δ (wn B ::ₘ Γ.map wn) → INC (B ::ᵢ Δ') (Γ'.map wn) →
+      INC (Δ ∪ Δ') (Γ.map wn + Γ'.map wn)
+  | topL {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} : INC Δ Γ → INC (top ::ᵢ Δ) Γ
+  | topR : INC {} {top}
   | ffL : INC {ff} 0
   /-- `ffR^?`: `Δ ⊢ ?Γ` / `Δ ⊢ ff, ?Γ` -/
-  | ffR {Δ Γ : Multiset (Formula α)} : INC Δ (Γ.map wn) → INC Δ (ff ::ₘ Γ.map wn)
-  | withL₁ {Δ Γ : Multiset (Formula α)} {A₁} (A₂) : INC (A₁ ::ₘ Δ) Γ → INC («with» A₁ A₂ ::ₘ Δ) Γ
-  | withL₂ {Δ Γ : Multiset (Formula α)} {A₂} (A₁) : INC (A₂ ::ₘ Δ) Γ → INC («with» A₁ A₂ ::ₘ Δ) Γ
+  | ffR {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} : INC Δ (Γ.map wn) → INC Δ (ff ::ₘ Γ.map wn)
+  | withL₁ {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A₁} (A₂) : INC (A₁ ::ᵢ Δ) Γ → INC («with» A₁ A₂ ::ᵢ Δ) Γ
+  | withL₂ {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A₂} (A₁) : INC (A₂ ::ᵢ Δ) Γ → INC («with» A₁ A₂ ::ᵢ Δ) Γ
   /-- `&R^?` -/
-  | withR {Δ Γ : Multiset (Formula α)} {B₁ B₂} : INC Δ (B₁ ::ₘ Γ.map wn) → INC Δ (B₂ ::ₘ Γ.map wn) →
+  | withR {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {B₁ B₂} : INC Δ (B₁ ::ₘ Γ.map wn) → INC Δ (B₂ ::ₘ Γ.map wn) →
       INC Δ («with» B₁ B₂ ::ₘ Γ.map wn)
-  | disjL {Δ Γ : Multiset (Formula α)} {A₁ A₂} :
-      INC (A₁ ::ₘ Δ) Γ → INC (A₂ ::ₘ Δ) Γ → INC (disj A₁ A₂ ::ₘ Δ) Γ
+  | disjL {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A₁ A₂} :
+      INC (A₁ ::ᵢ Δ) Γ → INC (A₂ ::ᵢ Δ) Γ → INC (disj A₁ A₂ ::ᵢ Δ) Γ
   /-- `∨R^?` -/
-  | disjR₁ {Δ Γ : Multiset (Formula α)} {B₁} (B₂) :
+  | disjR₁ {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {B₁} (B₂) :
       INC Δ (B₁ ::ₘ Γ.map wn) → INC Δ (disj B₁ B₂ ::ₘ Γ.map wn)
   /-- `∨R^?` -/
-  | disjR₂ {Δ Γ : Multiset (Formula α)} {B₂} (B₁) :
+  | disjR₂ {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {B₂} (B₁) :
       INC Δ (B₂ ::ₘ Γ.map wn) → INC Δ (disj B₁ B₂ ::ₘ Γ.map wn)
   /-- `⇒L^?`: `Δ, B ⊢ Γ`, `Θ ⊢ A, ?Ξ` / `Δ, Θ, A ⇒ B ⊢ Γ, ?Ξ` -/
-  | impL {Δ Γ Θ Ξ : Multiset (Formula α)} {A B} : INC (B ::ₘ Δ) Γ → INC Θ (A ::ₘ Ξ.map wn) →
-      INC (imp A B ::ₘ (Δ + Θ)) (Γ + Ξ.map wn)
+  | impL {Δ Θ : Finset (Formula α)} {Γ Ξ : Multiset (Formula α)} {A B} : INC (B ::ᵢ Δ) Γ → INC {} (A ::ₘ Ξ.map wn) →
+      INC (imp A B ::ᵢ (Δ ∪ Θ)) (Γ + Ξ.map wn)
   /-- `⇒R^?`: `Δ, A ⊢ B, ?Γ` / `Δ ⊢ A ⇒ B, ?Γ` -/
-  | impR {Δ Γ : Multiset (Formula α)} {A B} :
-      INC (A ::ₘ Δ) (B ::ₘ Γ.map wn) → INC Δ (imp A B ::ₘ Γ.map wn)
+  | impR {Δ : Finset (Formula α)} {Γ : Multiset (Formula α)} {A B} :
+      INC (A ::ᵢ Δ) (B ::ₘ Γ.map wn) → INC Δ (imp A B ::ₘ Γ.map wn)
 
 end ILe
 
@@ -379,47 +379,47 @@ open Formula
 
 /-- The sequent calculus **CLC** for classical linear logic negative CLL⁻ —
 **Paper Section 3.3, Definition 3.20, Figure 5** (PDF pages 25–26). -/
-inductive CLC : Multiset (Formula α) → Multiset (Formula α) → Prop
-  | bangW {Δ Γ : Multiset (Formula α)} (A) : CLC Δ Γ → CLC (bang A ::ₘ Δ) Γ
-  | weakR {Δ Γ : Multiset (Formula α)} (B) : CLC Δ Γ → CLC Δ (B ::ₘ Γ)
-  | bangC {Δ Γ : Multiset (Formula α)} {A} : CLC (bang A ::ₘ bang A ::ₘ Δ) Γ → CLC (bang A ::ₘ Δ) Γ
-  | contrR {Δ Γ : Multiset (Formula α)} {B} : CLC Δ (B ::ₘ B ::ₘ Γ) → CLC Δ (B ::ₘ Γ)
+inductive CLC : Multiset (Formula α) → Finset (Formula α) → Prop
+  | bangW {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} (A) : CLC Δ Γ → CLC (bang A ::ₘ Δ) Γ
+  | weakR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} (B) : CLC Δ Γ → CLC Δ (B ::ᵢ Γ)
+  | bangC {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A} : CLC (bang A ::ₘ bang A ::ₘ Δ) Γ → CLC (bang A ::ₘ Δ) Γ
+--   | contrR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {B} : CLC Δ (B ::ₘ B ::ₘ Γ) → CLC Δ (B ::ₘ Γ)
   /-- `!D`: `!Δ, A ⊢ Γ` / `!Δ, !A ⊢ Γ` -/
-  | bangD {Δ Γ : Multiset (Formula α)} {A} :
+  | bangD {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A} :
       CLC (A ::ₘ Δ.map bang) Γ → CLC (bang A ::ₘ Δ.map bang) Γ
   /-- `!R^!`: `!Δ ⊢ B, Γ` / `!Δ ⊢ !B, Γ` -/
-  | bangR {Δ Γ : Multiset (Formula α)} {B} :
-      CLC (Δ.map bang) (B ::ₘ Γ) → CLC (Δ.map bang) (bang B ::ₘ Γ)
+  | bangR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {B} :
+      CLC (Δ.map bang) (B ::ᵢ Γ) → CLC (Δ.map bang) (bang B ::ᵢ Γ)
   | id (A) : CLC {A} {A}
   /-- `Cut^!`: `!Δ ⊢ B, Γ`, `!Δ', !B ⊢ Γ'` / `!Δ, !Δ' ⊢ Γ, Γ'` -/
-  | cut {Δ Γ Δ' Γ' : Multiset (Formula α)} {B} :
-      CLC (Δ.map bang) (B ::ₘ Γ) → CLC (bang B ::ₘ Δ'.map bang) Γ' →
-      CLC (Δ.map bang + Δ'.map bang) (Γ + Γ')
+  | cut {Γ Γ' : Finset (Formula α)} {Δ Δ' : Multiset (Formula α)} {B} :
+      CLC (Δ.map bang) (B ::ᵢ Γ) → CLC (bang B ::ₘ Δ'.map bang) Γ' →
+      CLC (Δ.map bang + Δ'.map bang) (Γ ∪ Γ')
   /-- `ttL^!` -/
-  | ttL {Δ Γ : Multiset (Formula α)} : CLC (Δ.map bang) Γ → CLC (tt ::ₘ Δ.map bang) Γ
+  | ttL {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} : CLC (Δ.map bang) Γ → CLC (tt ::ₘ Δ.map bang) Γ
   | ttR : CLC 0 {tt}
-  | botL : CLC {bot} 0
-  | botR {Δ Γ : Multiset (Formula α)} : CLC Δ Γ → CLC Δ (bot ::ₘ Γ)
+  | botL : CLC {bot} {}
+  | botR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} : CLC Δ Γ → CLC Δ (bot ::ᵢ Γ)
   /-- `∧L^!` -/
-  | conjL₁ {Δ Γ : Multiset (Formula α)} {A₁} (A₂) :
+  | conjL₁ {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A₁} (A₂) :
       CLC (A₁ ::ₘ Δ.map bang) Γ → CLC (conj A₁ A₂ ::ₘ Δ.map bang) Γ
   /-- `∧L^!` -/
-  | conjL₂ {Δ Γ : Multiset (Formula α)} {A₂} (A₁) :
+  | conjL₂ {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A₂} (A₁) :
       CLC (A₂ ::ₘ Δ.map bang) Γ → CLC (conj A₁ A₂ ::ₘ Δ.map bang) Γ
-  | conjR {Δ Γ : Multiset (Formula α)} {B₁ B₂} :
-      CLC Δ (B₁ ::ₘ Γ) → CLC Δ (B₂ ::ₘ Γ) → CLC Δ (conj B₁ B₂ ::ₘ Γ)
+  | conjR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {B₁ B₂} :
+      CLC Δ (B₁ ::ᵢ Γ) → CLC Δ (B₂ ::ᵢ Γ) → CLC Δ (conj B₁ B₂ ::ᵢ Γ)
   /-- `⊕L^!` -/
-  | plusL {Δ Γ : Multiset (Formula α)} {A₁ A₂} :
+  | plusL {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A₁ A₂} :
       CLC (A₁ ::ₘ Δ.map bang) Γ → CLC (A₂ ::ₘ Δ.map bang) Γ →
       CLC (plus A₁ A₂ ::ₘ Δ.map bang) Γ
-  | plusR₁ {Δ Γ : Multiset (Formula α)} {B₁} (B₂) : CLC Δ (B₁ ::ₘ Γ) → CLC Δ (plus B₁ B₂ ::ₘ Γ)
-  | plusR₂ {Δ Γ : Multiset (Formula α)} {B₂} (B₁) : CLC Δ (B₂ ::ₘ Γ) → CLC Δ (plus B₁ B₂ ::ₘ Γ)
+  | plusR₁ {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {B₁} (B₂) : CLC Δ (B₁ ::ᵢ Γ) → CLC Δ (plus B₁ B₂ ::ᵢ Γ)
+  | plusR₂ {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {B₂} (B₁) : CLC Δ (B₂ ::ᵢ Γ) → CLC Δ (plus B₁ B₂ ::ᵢ Γ)
   /-- `↬L^!`: `!Δ, B ⊢ Γ`, `Θ ⊢ A, Ξ` / `!Δ, Θ, !(A ↬ B) ⊢ Γ, Ξ` -/
-  | impL {Δ Γ Θ Ξ : Multiset (Formula α)} {A B} : CLC (B ::ₘ Δ.map bang) Γ → CLC Θ (A ::ₘ Ξ) →
-      CLC (bang (imp A B) ::ₘ (Δ.map bang + Θ)) (Γ + Ξ)
+  | impL {Δ Θ : Multiset (Formula α)} {Γ Ξ : Finset (Formula α)} {A B} : CLC (B ::ₘ Δ.map bang) Γ → CLC Θ (A ::ᵢ Ξ) →
+      CLC (bang (imp A B) ::ₘ (Δ.map bang + Θ)) (Γ ∪ Ξ)
   /-- `↬R^!`: `!Δ, A ⊢ B, Γ` / `!Δ ⊢ A ↬ B, Γ` -/
-  | impR {Δ Γ : Multiset (Formula α)} {A B} :
-      CLC (A ::ₘ Δ.map bang) (B ::ₘ Γ) → CLC (Δ.map bang) (imp A B ::ₘ Γ)
+  | impR {Δ : Multiset (Formula α)} {Γ : Finset (Formula α)} {A B} :
+      CLC (A ::ₘ Δ.map bang) (B ::ᵢ Γ) → CLC (Δ.map bang) (imp A B ::ᵢ Γ)
 
 end CLLneg
 
