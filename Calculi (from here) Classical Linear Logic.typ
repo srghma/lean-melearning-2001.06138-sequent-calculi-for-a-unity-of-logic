@@ -154,7 +154,7 @@ The sequent calculus *LLK* for CLL consists of the axioms and the rules displaye
     // Row 11: Additive Conjunction (With)
     pt($Delta, A_1 with A_2 tack Gamma$,
       premises: ($Delta, A_i tack Gamma$,),
-      left: [($with$L)],
+      left: [($with$L$#sub[i]$)],
       right: [($i in overline(2)$)],
       ill: true),
     pt($Delta tack B_1 with B_2, Gamma$,
@@ -177,6 +177,7 @@ The sequent calculus *LLK* for CLL consists of the axioms and the rules displaye
       ill: true),
     pt($Delta tack B_1 plus B_2, Gamma$,
       premises: ($Delta tack B_i, Gamma$,),
+      left: [($plus$R$#sub[i]$)],
       right: [($i in overline(2)$)],
       ill: true),
 

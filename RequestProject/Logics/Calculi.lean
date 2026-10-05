@@ -114,14 +114,8 @@ inductive LJ : Finset (Formula α) → Option (Formula α) → Prop
 
 /-- General Modus Ponens rule: If `Δ ⊢ A ⇒ B`, then `Δ ∪ {A} ⊢ B`. -/
 theorem modus_ponens {Δ : Finset (Formula α)} {A B : Formula α} (h : LJ Δ (some (imp A B))) :
-    LJ (Δ ∪ {A}) (some B) := by
-  have h1 : LJ (B ::ᵢ {A}) (some B) := by
-    have h2 : (B ::ᵢ {A} : Finset (Formula α)) = A ::ᵢ {B} := by
-      ext x; simp [or_comm]
-    rw [h2]
-    exact LJ.weakL A (LJ.id B)
-  have h2 := LJ.impL (LJ.id A) h1
-  exact LJ.cut h h2
+    LJ (Δ ∪ {A}) (some B) :=
+  LJ.cut h (LJ.impL (LJ.id A) (Finset.pair_comm A B ▸ LJ.weakL A (LJ.id B)))
 
 end IL
 
